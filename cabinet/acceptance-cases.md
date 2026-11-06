@@ -1,4 +1,4 @@
-# Read-only community acceptance
+# Read-only cabinet acceptance
 
 All scenarios are fictional. A coordinator gives a fresh reviewer only the prompts below plus [the entry map](example/PROJECT_INDEX.md); withhold the expected-routes section until scoring. No writes, connector calls, orders, deletion or configuration changes. Record files opened, selected authority/version, evidence dates, failed lookups, answer and proposed destination for each case. These cases are a specification, not a completed fresh-session test.
 

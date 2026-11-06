@@ -3,7 +3,7 @@
 Wholly synthetic tabletop business example: assess a replenishment question without placing an order.
 
 Selected guide: [2030-04-08 task/source guide](2030-04-08-task-and-source-guide.md).
-Selected procedure: sample-cabinet v1, source [community operations](../operations.md); documentation only, no installed skill.
+Selected procedure: sample-cabinet v1, source [cabinet operations](../README.md); documentation only for this exercise.
 
 Authority for the scenario: [source register and stock evidence](sources.md). Evidence covers item SC-42 on 2030-04-08 only. [Decision and result](2030-04-08-result.md) is the permitted dated result/handoff example; future authorized work uses a new dated result alongside it.
 

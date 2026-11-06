@@ -18,6 +18,6 @@ The fictional supplier service is authoritative for current supplier availabilit
 
 ## Operating lesson evidence
 
-Invented baseline run A (2030-04-07) and run B (2030-04-08) omitted the stock as-of date, making a historical answer look current. A reviewer corrected both omissions. Existing community operations already requires coverage/date: an identical lesson is duplicate coverage, not grounds to append another rule. If evaluating a missing-coverage variant, the reviewer must explicitly assume that requirement absent; no actual file changes are needed.
+Invented baseline run A (2030-04-07) and run B (2030-04-08) omitted the stock as-of date, making a historical answer look current. A reviewer corrected both omissions. The existing cabinet operations (the cabinet README) already require coverage/date: an identical lesson is duplicate coverage, not grounds to append another rule. If evaluating a missing-coverage variant, the reviewer must explicitly assume that requirement absent; no actual file changes are needed.
 
 A separate claim that a supplier always ships next day has no supporting record. It is unsupported. Supplier lead time, if later evidenced, is a knowledge fact and requires the normal knowledge approval route.

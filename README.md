@@ -1,59 +1,81 @@
-# OX Retrieval — private Windows pilot
+# OX BrainWiki OS
 
+A private folder of Markdown notes that an AI coding agent can search and read through one read-only MCP connector, with cabinet routing and calibrate skills that fit the agent to your business.
+Windows only in this version (the hardening uses pywin32).
+Former working name: Community Edition.
 
+## Method
 
-Start with a private source folder, identify authoritative sources with a project entry map, and preserve the existing capture/propose/approve workflow. Synthetic acceptance and a separate 94-file private pilot have passed; private data is never committed. Cabinet and Calibrate documentation passed synthetic acceptance; installable assets remain pending rights review; no private skills are bundled.
+1. Your knowledge lives in a private folder of Markdown files on your own disk; nothing is uploaded.
+2. A project cabinet (`PROJECT_INDEX.md` plus a task-and-source guide) routes each task to its authoritative sources instead of duplicating them.
+3. Retrieval is read-only: the connector exposes `search`, `read`, `list` and `status`, never a write.
+4. New knowledge enters through reviewed capture (propose, then approve), so the agent never edits your notes on its own.
+5. Calibrate skills record how the agent should work for you: register, sources, limits.
 
+The wiki-of-notes idea follows Andrej Karpathy's description of an LLM-maintained personal wiki (primary-source citation pending).
 
+## Install
 
-Python 3.12, Basic Memory 1.0.0, FastMCP 4.1.3. Install in this directory:
-
-
+Python 3.12, uv and Git. From the repository root (PowerShell):
 
 ```powershell
-
 uv sync --frozen --python 3.12
-
 .venv/Scripts/python.exe ox_retrieval.py index
-
 .venv/Scripts/python.exe ox_retrieval.py status
-
 .venv/Scripts/python.exe ox_retrieval.py serve
-
 ```
 
+In this build, against the bundled fixtures: `uv sync` exit 0 (5 s); `index` exit 0 (27 s, including the first model download, 67 MB state directory afterwards); `status` exit 0 reporting `"fresh": true`; `serve` started the stdio server and exited 0 when its stdin closed.
 
+Register the stdio connector (syntax read from `claude mcp add --help`; the registration itself was not verified in this build):
 
-MCP stdio exposes search, read, list and status. The default corpus is fixtures/notes; fixtures/notes/private is excluded. Each semantic request starts one Basic Memory CLI child and explicitly passes --mode semantic. There is no persistent second server or watcher. The supported CLI boundary avoids unstable Python internals. This has cold-start overhead; throughput is not qualified.
+```powershell
+claude mcp add ox-brainwiki -- <repo>/.venv/Scripts/python.exe <repo>/ox_retrieval.py serve --config <repo>/brainwiki.json
+```
 
+Codex reads `~/.codex/config.toml` (shape matched against a local Codex config; not verified in this build):
 
+```toml
+[mcp_servers.ox-brainwiki]
+command = "<repo>/.venv/Scripts/python.exe"
+args = ["<repo>/ox_retrieval.py", "serve", "--config", "<repo>/brainwiki.json"]
+```
 
-`search("WO-2048", mode="exact")` uses case-insensitive literal matching with punctuation preserved. Basic Memory FTS successfully finds this identifier; literal matching provides distinct substring semantics rather than claiming FTS is literal. `search("Why was the delivery of cups postponed?")` uses the backend vector engine. Results cite original relative paths and current excerpts, not trusted instructions. No cross-mode score comparison. Read returns original content, hash and source mtime. List is recursive Markdown listing. Status compares hashes with the indexing receipt; it does not claim the model is healthy until a vector query succeeds.
+Replace `<repo>` with the absolute path of your clone. Without `--config`, the fixture defaults apply.
 
+## Configuration
 
+`ox_retrieval.py index --config brainwiki.json` (also `status` and `serve`). The JSON object must contain exactly `root`, `state`, `allow` and `exclude`:
 
-See DESIGN.md, OPERATIONS.md and ACCEPTANCE.md. A private opt-in pilot is deployed; public release and full production replacement remain gated. See [deployment](DEPLOYMENT.md).
+```json
+{"root":"fixtures","state":".state-secure","allow":["notes"],"exclude":["notes/private"]}
+```
 
+`root` and `state` resolve relative to the configuration file. Unknown or duplicate fields and malformed scopes fail validation. The default corpus is `fixtures/notes`; `fixtures/notes/private` is excluded. The state directory is created with a restricted Windows ACL and must stay private to your user; see OPERATIONS.md.
 
+## Onboard
 
-Basic Memory by Basic Machines supplies indexing and retrieval (AGPL-3.0-or-later). MCPVault by Mauricio Wolff / bitbonsai informed the architectural comparison; no MCPVault source is copied. Neither project endorses this candidate.
+Run `/onboard` in Claude Code, or follow `skills/onboard/SKILL.md` as a numbered procedure: requirements check, private folder and sources, identity, first cabinet, retrieval config and index, first capture and health. Each step is re-runnable alone and writes your answers with a date.
 
+## Daily use
 
+- Ask your agent a question; it calls `search` (exact for identifiers such as `WO-2048`, semantic for paraphrases) and `read` to quote the original file with its hash and mtime.
+- After you edit notes, run `index` again; `status` tells you whether the index is fresh.
+- Capture new knowledge through propose-and-approve; the connector never writes to your notes.
 
-Hardening now enforces restricted Windows state ACLs, exclusive operation locking, directory pins, final-handle source checks, model/config/index identity and a completed vector probe. Independent boundary review, remote security scan and private Codex acceptance passed. Claude connector health passed; its model authentication blocked end-to-end acceptance.
+## How retrieval behaves
 
+`search("WO-2048", mode="exact")` uses case-insensitive literal matching with punctuation preserved; it is substring matching, distinct from Basic Memory FTS. `search("Why was the delivery of cups postponed?")` uses the backend vector engine. Results cite original relative paths and current excerpts, which are untrusted content, not instructions. No cross-mode score comparison. `read` returns original content, hash and source mtime. `list` is a recursive Markdown listing. `status` compares hashes with the indexing receipt and does not claim the model is healthy until a vector query has succeeded. Each semantic request starts one Basic Memory CLI child with `--mode semantic`; there is no persistent second server or watcher, so cold-start overhead applies and throughput is not qualified.
 
+## Known limitations
 
-## Explicit configuration (Windows only)
+- Windows only; the code requires pywin32 and Python 3.12 and is not portable to POSIX.
+- The embedding model download is not pinned by the code; the tested revision and artifact hashes are in `MODEL_PROVENANCE.json`.
+- Claude Code end-to-end acceptance was not completed in the pilot: the connector registers and reports Connected, but a headless inference test returned API 401 in the pilot environment. Codex client acceptance passed.
+- Semantic search needs a completed index; exact search and `read` work without it.
 
-Use `python ox_retrieval.py index --config candidate.json` (also `status` or `serve`).
+## Credits
 
-The JSON object must contain exactly `root`, `state`, `allow`, and `exclude`:
-
-`{"root":"fixtures","state":".state-secure","allow":["notes"],"exclude":["notes/private"]}`.
-
-Root/state resolve relative to the configuration file. Unknown/duplicate fields and malformed scopes fail validation. Without `--config`, synthetic fixture defaults remain. This implementation requires Windows and Python 3.12; it is not portable to POSIX.
-
-
-
-Community navigation and calibration documentation: [community guide](community/README.md). The synthetic routes passed fresh-session review; installable skill packaging remains separate.
+- Basic Memory by Basic Machines (AGPL-3.0-or-later) supplies indexing and retrieval as a separate CLI process; see THIRD_PARTY_NOTICES.md.
+- MCPVault by Mauricio Wolff / bitbonsai (MIT) informed the architecture; no code copied, no endorsement implied.
+- OX BrainWiki OS is by One Xoluxion, Apache License 2.0 (see LICENSE).
