@@ -41,7 +41,7 @@ command = "<repo>/.venv/Scripts/python.exe"
 args = ["<repo>/ox_retrieval.py", "serve", "--config", "<repo>/brainwiki.json"]
 ```
 
-Replace `<repo>` with the absolute path of your clone. Without `--config`, the fixture defaults apply. The onboard skill writes its configuration as `retrieval.config.json`; after onboarding, pass that file name in place of `brainwiki.json`.
+Replace `<repo>` with the absolute path of your clone, and create `<repo>/brainwiki.json` from the Configuration example below first (the clone does not ship one; onboarding writes `retrieval.config.json` instead, use that name if you onboarded). Without `--config`, the fixture defaults apply. The onboard skill writes its configuration as `retrieval.config.json`; after onboarding, pass that file name in place of `brainwiki.json`.
 
 ## Configuration
 
