@@ -10,6 +10,7 @@ import time
 import threading
 import ctypes
 import msvcrt
+import winreg
 import win32job
 from contextlib import contextmanager
 from importlib.metadata import version
@@ -17,6 +18,16 @@ from state_guard import state_guard, guarded
 
 BASE = Path(__file__).resolve().parent
 MAX_BYTES = 1024 * 1024
+WINDOWS_MAX_PATH = 259  # longest path Windows accepts while LongPathsEnabled is 0 (260 failed with errno 2)
+MODEL_PATH_SUFFIX = 123  # measured: models/models--Qdrant--bge-small-en-v1.5-onnx-Q/snapshots/aa8f8b060edb00e03bfdd08813a2949946c8ba55/special_tokens_map.json
+
+def long_paths_enabled():
+    """True only when HKLM FileSystem\\LongPathsEnabled is 1; any failure reads as disabled."""
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Control\FileSystem') as key:
+            return winreg.QueryValueEx(key, 'LongPathsEnabled')[0] == 1
+    except Exception:
+        return False
 
 @contextmanager
 def pinned_directories(path):
@@ -90,6 +101,10 @@ class Retrieval:
     def __init__(self, root=BASE / 'fixtures', state=BASE / '.state-secure', allowed=('notes',), excluded=('notes/private',)):
         if os.name != 'nt': raise RuntimeError('this release supports Windows only')
         self.root, self.state = Path(root).absolute(), Path(state).absolute()
+        if os.name == 'nt':
+            limit = WINDOWS_MAX_PATH - MODEL_PATH_SUFFIX
+            if len(str(self.state)) > limit and not long_paths_enabled():
+                raise ValueError(f'state path too long for Windows: {len(str(self.state))} characters, limit {limit}; use a shorter install or state path, or enable Windows long paths (LongPathsEnabled)')
         for selected in (self.root, self.state):
             if any(part.endswith(('.', ' ')) or '~' in part for part in selected.parts):
                 raise ValueError('root/state alias denied')

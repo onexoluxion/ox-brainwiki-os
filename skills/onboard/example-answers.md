@@ -8,8 +8,7 @@ No answers; the agent runs the four commands and records exit codes.
 
 ## Step 2: private folder and sources
 
-- Root folder: a new empty folder named `northline-brain` under the test folder of the proof run (for example `<test folder>/northline-brain`); create it if absent.
-- Notes subfolder: `notes`
+- Root folder: the folder the operator names for this run (a proof run passes it in); the notes subfolder is `notes`.
 - Other sources:
   1. `Quality manual` | `shared drive, folder QMS/current` | `the lab's accreditation procedures and calibration method sheets`
   2. `Job ticket sheet` | `spreadsheet jobs-2026.xlsx on the lab PC` | `every calibration job, its certificate number, due date and technician`
@@ -35,7 +34,11 @@ No answers; the agent runs the four commands and records exit codes.
 - Project name: `Contract renewals 2027`
 - Purpose: `know which contracts expire in the next 60 days and what to quote`
 - Authoritative source 1: `Renewal register` | `notes/contracts/renewal-register.md` | `decides which customer is due and when`
+  - Which task does this source answer: `list the contracts that expire in the next 60 days`
+  - What evidence does it hold and as of when: `certificate number and expiry date per customer, as of the register's last edit`
 - Authoritative source 2: `Pricing sheet 2027` | `notes/contracts/pricing-2027.md` | `decides the price to quote per instrument class`
+  - Which task does this source answer: `quote the renewal price for an instrument class`
+  - What evidence does it hold and as of when: `list and contract prices per instrument class, as of the 2027 sheet`
 - Results destination: `notes/contracts/results/` as a dated file
 - Known gap: `distributor stock levels are not visible to the lab`
 
@@ -67,13 +70,13 @@ Pressure gauge bank: 240 per bank, 200 under an annual contract.
 
 - Exact identifier: `CAL-7731`
 - Semantic question: `Which customer must have its torque wrenches recalibrated before the end of the first quarter?`
-- Expected: the exact search returns `notes/contracts/renewal-register.md`; the semantic search returns the same file first; `read` shows its content.
+- Expected: the exact search returns `notes/contracts/renewal-register.md`; the semantic search returns only the user's own files, with the register among its results (ranking is not asserted); `read` of the exact search's top result shows its content.
 
 ## Step 6: first capture and health
 
 - Capture text: `Delta Fabrication asked for a Tuesday delivery slot for all pressure gauge pickups; confirmed by their shop manager on the phone.`
 - Approval: `yes`
-- Expected: the capture lands at `notes/inbox/<date>-delta-fabrication-tuesday-slot.md`, `index` runs again, and an exact search for `Tuesday` returns that file.
+- Expected: the capture lands at `notes/inbox/<date>-delta-fabrication-tuesday-slot.md`, `index` runs again, `status` reports `"fresh": true`, and an exact search for `Tuesday` returns that file.
 
 ## Re-run check (proof 2)
 

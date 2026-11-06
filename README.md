@@ -16,7 +16,7 @@ The wiki-of-notes idea follows Andrej Karpathy's description of an LLM-maintaine
 
 ## Install
 
-Python 3.12, uv and Git. From the repository root (PowerShell):
+Python 3.12, uv and Git. Clone to a short path (for example a top-level folder); on Windows the model cache lives under the state directory and paths longer than 259 characters fail unless long paths are enabled. The connector refuses a state path longer than 136 characters in that case. From the repository root (PowerShell):
 
 ```powershell
 uv sync --frozen --python 3.12
@@ -25,9 +25,9 @@ uv sync --frozen --python 3.12
 .venv/Scripts/python.exe ox_retrieval.py serve
 ```
 
-In this build, against the bundled fixtures: `uv sync` exit 0 (5 s); `index` exit 0 (27 s, including the first model download, 67 MB state directory afterwards); `status` exit 0 reporting `"fresh": true`; `serve` started the stdio server and exited 0 when its stdin closed.
+In this build, against the bundled fixtures: `uv sync` exit 0 (5 s); `index` exit 0 (27 s with a state path of 46 characters, including the first model download, 67 MB state directory afterwards); `status` exit 0 reporting `"fresh": true`; `serve` started the stdio server and exited 0 when its stdin closed.
 
-Register the stdio connector (syntax read from `claude mcp add --help`; the registration itself was not verified in this build):
+Register the stdio connector (Claude Code command verified 2026-11-06: the registration reported Connected, a headless `status` plus one exact `search` through the connector succeeded, then the registration was removed with `claude mcp remove ox-brainwiki`):
 
 ```powershell
 claude mcp add ox-brainwiki -- <repo>/.venv/Scripts/python.exe <repo>/ox_retrieval.py serve --config <repo>/brainwiki.json
@@ -41,7 +41,7 @@ command = "<repo>/.venv/Scripts/python.exe"
 args = ["<repo>/ox_retrieval.py", "serve", "--config", "<repo>/brainwiki.json"]
 ```
 
-Replace `<repo>` with the absolute path of your clone. Without `--config`, the fixture defaults apply.
+Replace `<repo>` with the absolute path of your clone. Without `--config`, the fixture defaults apply. The onboard skill writes its configuration as `retrieval.config.json`; after onboarding, pass that file name in place of `brainwiki.json`.
 
 ## Configuration
 
@@ -55,7 +55,7 @@ Replace `<repo>` with the absolute path of your clone. Without `--config`, the f
 
 ## Onboard
 
-Run `/onboard` in Claude Code, or follow `skills/onboard/SKILL.md` as a numbered procedure: requirements check, private folder and sources, identity, first cabinet, retrieval config and index, first capture and health. Each step is re-runnable alone and writes your answers with a date.
+Run `/onboard` in Claude Code, or follow `skills/onboard/SKILL.md` as a numbered procedure: requirements check, private folder and sources, identity, first cabinet, retrieval config and index, first capture and health. Each step is re-runnable alone and writes your answers with a date. The health check at step 6 is `status --config retrieval.config.json` reporting `"fresh": true` plus one exact `search` through the connector for a word from your first capture.
 
 ## Daily use
 
@@ -71,7 +71,8 @@ Run `/onboard` in Claude Code, or follow `skills/onboard/SKILL.md` as a numbered
 
 - Windows only; the code requires pywin32 and Python 3.12 and is not portable to POSIX.
 - The embedding model download is not pinned by the code; the tested revision and artifact hashes are in `MODEL_PROVENANCE.json`.
-- Claude Code end-to-end acceptance was not completed in the pilot: the connector registers and reports Connected, but a headless inference test returned API 401 in the pilot environment. Codex client acceptance passed.
+- Claude Code end-to-end was verified on 2026-11-06 (registration, status and exact search through the connector); Codex end-to-end was verified in the private pilot.
+- Windows path length: see Install.
 - Semantic search needs a completed index; exact search and `read` work without it.
 
 ## Credits
