@@ -30,6 +30,46 @@ WINDOWS_MAX_PATH = 259  # longest path Windows accepts while LongPathsEnabled is
 MODEL_PATH_SUFFIX = 123  # measured: models/models--Qdrant--bge-small-en-v1.5-onnx-Q/snapshots/aa8f8b060edb00e03bfdd08813a2949946c8ba55/special_tokens_map.json
 
 
+class _AttributeTag(ctypes.Structure):
+    _fields_ = [('attributes', ctypes.c_uint32), ('tag', ctypes.c_uint32)]
+
+
+class _WindowsAPI:
+    """Bind immutable signatures once; handles and buffers remain call-local."""
+    def __init__(self):
+        self.kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        self.create = self.kernel.CreateFileW
+        self.create.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32,
+                               ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p]
+        self.create.restype = ctypes.c_void_p
+        self.close = self.kernel.CloseHandle
+        self.close.argtypes = [ctypes.c_void_p]
+        self.close.restype = ctypes.c_int
+        self.info = self.kernel.GetFileInformationByHandleEx
+        self.info.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint32]
+        self.info.restype = ctypes.c_int
+        self.final = self.kernel.GetFinalPathNameByHandleW
+        self.final.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32]
+        self.final.restype = ctypes.c_uint32
+
+
+_WINDOWS = _WindowsAPI() if os.name == 'nt' else None
+
+
+def _write_if_different(destination, data, limit):
+    """Caller holds the guarded state lock; compare bounded actual bytes."""
+    if destination.is_symlink() or destination.is_junction():
+        raise ValueError('linked state denied')
+    if destination.exists():
+        if not destination.is_file() or destination.stat().st_nlink != 1:
+            raise ValueError('linked state denied')
+        with destination.open('rb') as stream:
+            current = stream.read(limit + 1)
+        if current == data:
+            return
+    destination.write_bytes(data)
+
+
 class RuntimeFailure(RuntimeError):
     """Only fixed machine-readable metadata crosses the client error boundary."""
     MESSAGES = {
@@ -99,34 +139,23 @@ def long_paths_enabled():
 @contextmanager
 def pinned_directories(path):
     """Pin each existing directory without following reparse points or sharing delete."""
-    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-    create = kernel.CreateFileW
-    create.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32,
-                       ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p]
-    create.restype = ctypes.c_void_p
-    close = kernel.CloseHandle
-    close.argtypes = [ctypes.c_void_p]
-    info = kernel.GetFileInformationByHandleEx
-    info.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint32]
-    class AttributeTag(ctypes.Structure):
-        _fields_ = [('attributes', ctypes.c_uint32), ('tag', ctypes.c_uint32)]
     handles = []
     try:
         path = Path(path).absolute()
         for part in [*reversed(path.parents), path]:
-            handle = create(str(part), 0x80000000, 3, None, 3, 0x02200000, None)
+            handle = _WINDOWS.create(str(part), 0x80000000, 3, None, 3, 0x02200000, None)
             if handle == ctypes.c_void_p(-1).value:
                 raise OSError(ctypes.get_last_error(), 'directory pin failed')
             handles.append(handle)
-            attributes = AttributeTag()
-            if not info(handle, 9, ctypes.byref(attributes), ctypes.sizeof(attributes)):
+            attributes = _AttributeTag()
+            if not _WINDOWS.info(handle, 9, ctypes.byref(attributes), ctypes.sizeof(attributes)):
                 raise OSError('directory attributes unavailable')
             if attributes.attributes & 0x400 or not attributes.attributes & 0x10:
                 raise ValueError('reparse directory denied')
         yield
     finally:
         for handle in reversed(handles):
-            close(handle)
+            _WINDOWS.close(handle)
 
 def scope_prefix(value):
     if (not isinstance(value, str) or not value or len(value) > 512
@@ -223,12 +252,8 @@ class Retrieval:
         p = self.path(path)
         with p.open('rb') as f:
             # Validate the object actually opened, not a previous pathname lookup.
-            kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-            final = kernel.GetFinalPathNameByHandleW
-            final.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32]
-            final.restype = ctypes.c_uint32
             buf = ctypes.create_unicode_buffer(32768)
-            n = final(msvcrt.get_osfhandle(f.fileno()), buf, len(buf), 0)
+            n = _WINDOWS.final(msvcrt.get_osfhandle(f.fileno()), buf, len(buf), 0)
             if not n or n >= len(buf):
                 raise ValueError('canonical path unavailable')
             actual = Path(buf.value.removeprefix('\\\\?\\'))
@@ -246,6 +271,9 @@ class Retrieval:
         return {'path': path, 'content': data.decode('utf-8'), 'sha256': hashlib.sha256(data).hexdigest(), 'source_mtime': mtime, 'untrusted_content': True}
 
     def inventory(self):
+        return self._scan_sources()
+
+    def _scan_sources(self, visit=None):
         result = {}
         total = 0
         visited = 0
@@ -278,6 +306,8 @@ class Retrieval:
                     result[name] = source['sha256']
                     if len(result) > 1000:
                         raise ValueError('corpus too large')
+                    if visit is not None:
+                        visit(source)
         return result
 
     def list(self, path='notes', limit=20):
@@ -464,10 +494,11 @@ class Retrieval:
                 self.fail('source_changed', 'index')
             dest = stage/name
             dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_bytes(source['content'].encode('utf-8'))
+            _write_if_different(dest, source['content'].encode('utf-8'), MAX_BYTES)
         config = self.state/'bm'/'config.json'
         config.parent.mkdir(exist_ok=True)
-        config.write_text(json.dumps({'projects': {'main': {'path': str(stage), 'mode': 'local'}}, 'default_project': 'main', 'auto_update': False, 'ensure_frontmatter_on_sync': False, 'disable_permalinks': True, 'format_on_save': False, 'semantic_embedding_provider':'fastembed', 'semantic_embedding_model':'bge-small-en-v1.5', 'semantic_embedding_threads':2, 'logfire_enabled':False, 'logfire_send_to_logfire':False}), encoding='utf-8')
+        config_bytes = json.dumps({'projects': {'main': {'path': str(stage), 'mode': 'local'}}, 'default_project': 'main', 'auto_update': False, 'ensure_frontmatter_on_sync': False, 'disable_permalinks': True, 'format_on_save': False, 'semantic_embedding_provider':'fastembed', 'semantic_embedding_model':'bge-small-en-v1.5', 'semantic_embedding_threads':2, 'logfire_enabled':False, 'logfire_send_to_logfire':False}).encode('utf-8')
+        _write_if_different(config, config_bytes, 16384)
         self.backend('project', 'index', 'main')
         if self.inventory() != hashes:
             self.fail('source_changed', 'index')
@@ -520,14 +551,18 @@ class Retrieval:
             raise ValueError('invalid search')
         if mode == 'exact':
             matches = []
-            for p in self.inventory():
-                if p == scope or p.startswith(scope.rstrip('/') + '/'):
-                    source = self.read(p)
-                    if query.casefold() in source['content'].casefold():
-                        source['content'] = source['content'][:2000]
-                        matches.append(source)
-                        if len(matches) >= limit:
-                            break
+            matched = set()
+            needle = query.casefold()
+            def collect(source):
+                p = source['path']
+                if (len(matches) < limit and p not in matched
+                        and (p == scope or p.startswith(scope.rstrip('/') + '/'))
+                        and needle in source['content'].casefold()):
+                    matches.append(dict(source, content=source['content'][:2000]))
+                    matched.add(p)
+            # Drain the full scan even after the result limit: global limits and
+            # invalid later sources must still fail closed.
+            self._scan_sources(collect)
         else:
             if not self.status()['fresh']:
                 self.fail('index_unavailable', 'search')

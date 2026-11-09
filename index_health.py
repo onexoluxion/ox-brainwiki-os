@@ -13,8 +13,29 @@ MAX_DOCUMENTS = 1000
 MAX_CHUNKS = 100000
 QUERY_SECONDS = 2
 PROGRESS_STEPS = 1000
+BATCH_ROWS = 64
 EMPTY_HASH = hashlib.sha256(b'').hexdigest()
 DIGEST = re.compile(r'[0-9a-f]{64}\Z')
+
+
+class _IndexLimit(Exception):
+    pass
+
+
+def _rows(cursor, limit, deadline):
+    """Bound both database work and Python-side cursor consumption."""
+    count = 0
+    while True:
+        if time.monotonic() > deadline:
+            raise sqlite3.OperationalError('index deadline')
+        batch = cursor.fetchmany(BATCH_ROWS)
+        if not batch:
+            return
+        count += len(batch)
+        if count > limit:
+            raise _IndexLimit
+        yield from batch
+        del batch
 
 
 def inspect_index(database, project_path, hashes):
@@ -66,50 +87,55 @@ def inspect_index(database, project_path, hashes):
             if len(selected) != 1:
                 return dict(report, reason='project_unavailable')
             project_id = selected[0]
-            entities = db.execute(
+            entities = []
+            indexed = {}
+            for entity_id, name, digest, synced, deferred in _rows(db.execute(
                 'SELECT id, substr(file_path,1,513), substr(checksum,1,65), '
                 'substr(sync_checksum,1,65), vector_sync_deferred_at IS NOT NULL FROM entity '
                 'WHERE project_id=? LIMIT ?', (project_id, MAX_DOCUMENTS + 1),
-            ).fetchall()
-            chunks = db.execute(
+            ), MAX_DOCUMENTS, deadline):
+                # Retain only metadata needed after the cursor is drained.
+                entities.append((entity_id, name, deferred))
+                indexed[name] = (digest, synced)
+            vector_hashes = dict(_rows(db.execute(
+                'SELECT rowid, substr(source_hash,1,65) FROM search_vector_embeddings '
+                'WHERE project_id=? LIMIT ?', (project_id, MAX_CHUNKS + 1),
+            ), MAX_CHUNKS, deadline))
+            entity_ids = {item[0] for item in entities}
+            chunk_ids, populated = set(), set()
+            chunk_count = invalid_chunks = 0
+            for chunk_id, entity_id, ready, model, store, digest in _rows(db.execute(
                 'SELECT id, entity_id, substr(embedding_status,1,16), '
                 'substr(embedding_model,1,256), substr(vector_index,1,32), '
                 'substr(source_hash,1,65) FROM search_vector_chunks WHERE project_id=? LIMIT ?',
                 (project_id, MAX_CHUNKS + 1),
-            ).fetchall()
-            vectors = db.execute(
-                'SELECT rowid, substr(source_hash,1,65) FROM search_vector_embeddings '
-                'WHERE project_id=? LIMIT ?', (project_id, MAX_CHUNKS + 1),
-            ).fetchall()
-            if (len(entities) > MAX_DOCUMENTS or len(chunks) > MAX_CHUNKS
-                    or len(vectors) > MAX_CHUNKS):
-                return dict(report, reason='index_limit')
+            ), MAX_CHUNKS, deadline):
+                chunk_count += 1
+                chunk_ids.add(chunk_id)
+                populated.add(entity_id)
+                if (entity_id not in entity_ids or ready != 'ready'
+                        or model != EMBEDDING_IDENTITY or store != 'sqlite-vec'
+                        or not isinstance(digest, str) or not DIGEST.fullmatch(digest)
+                        or vector_hashes.get(chunk_id) != digest):
+                    invalid_chunks += 1
+    except _IndexLimit:
+        return dict(report, reason='index_limit')
     except (sqlite3.Error, OSError, ImportError, ValueError):
         return report
 
     # The backend may normalize staged frontmatter. Its sync checksum retains
     # the input bytes; either recorded file identity can match the source.
-    indexed = {name: (digest, synced) for _, name, digest, synced, _ in entities}
     report['indexed_documents'] = len(entities)
-    report['chunks'] = len(chunks)
+    report['chunks'] = chunk_count
     report['missing_documents'] = len(hashes.keys() - indexed.keys())
     report['unexpected_documents'] = len(indexed.keys() - hashes.keys())
     report['changed_documents'] = sum(digest not in indexed[p]
                                       for p, digest in hashes.items() if p in indexed)
-    vector_hashes = dict(vectors)
-    entity_ids = {item[0] for item in entities}
-    chunk_counts = {}
-    for chunk_id, entity_id, ready, model, store, digest in chunks:
-        chunk_counts[entity_id] = chunk_counts.get(entity_id, 0) + 1
-        if (entity_id not in entity_ids or ready != 'ready'
-                or model != EMBEDDING_IDENTITY or store != 'sqlite-vec'
-                or not isinstance(digest, str) or not DIGEST.fullmatch(digest)
-                or vector_hashes.get(chunk_id) != digest):
-            report['invalid_chunks'] += 1
-    report['extra_vectors'] = len(vector_hashes.keys() - {c[0] for c in chunks})
+    report['invalid_chunks'] = invalid_chunks
+    report['extra_vectors'] = sum(chunk_id not in chunk_ids for chunk_id in vector_hashes)
     report['incomplete_documents'] = sum(
-        bool(deferred) or (hashes.get(name) != EMPTY_HASH and not chunk_counts.get(entity_id))
-        for entity_id, name, _, _, deferred in entities
+        bool(deferred) or (hashes.get(name) != EMPTY_HASH and entity_id not in populated)
+        for entity_id, name, deferred in entities
     )
     failures = ('missing_documents', 'changed_documents', 'unexpected_documents',
                 'incomplete_documents', 'invalid_chunks', 'extra_vectors')
