@@ -75,7 +75,15 @@ Semantic search passes the validated folder scope to the backend before its resu
 
 Receipts are size-limited, validated and published through an fsynced temporary file plus atomic replacement. Missing, corrupt, oversized or older receipts require `index` again; exact search and allowed reads remain live. Atomic replacement prevents partially visible JSON but does not guarantee directory-entry durability through power loss. Backend failures expose fixed codes and optional numeric exit metadata, never captured output or internal paths. `last_error` is process-local and clears after a successful backend call; it is not a persistent incident history.
 
-For synthetic executable checks, run `.venv/Scripts/python.exe -m unittest test_pathlen test_retrieval test_deployment test_runtime`, then `.venv/Scripts/python.exe runtime_acceptance.py`. The latter exercises the real backend and MCP with an isolated invented corpus and 60 distracting documents; it reuses this clone's public model cache when present. These commands do not test another machine or certify general retrieval quality. [Runtime design and threat model](RUNTIME_DESIGN.md).
+For synthetic executable checks, run `.venv/Scripts/python.exe -m unittest discover`, then `.venv/Scripts/python.exe runtime_acceptance.py`. The latter exercises the real backend and MCP with an isolated invented corpus and 60 distracting documents; it reuses this clone's public model cache when present. These commands do not test another machine or certify general retrieval quality. [Runtime design and threat model](RUNTIME_DESIGN.md).
+
+## Performance changes in 0.3.0
+
+Exact search matches during the validated inventory scan, avoiding a second source read before its final status check. SQLite completeness consumes bounded cursor batches and retains compact metadata. Indexing skips byte-identical staging/config writes after bounded comparisons, while still running the backend index, vector probe and final validations. Win32 API signatures are bound once; filesystem handles, buffers, checks and locks remain local to each operation. Semantic search retains both freshness checks. No persistent cache, worker or watcher is added.
+
+See [performance design and measurement protocol](PERFORMANCE_DESIGN.md) for the frozen acceptance targets, synthetic workload and limits. The benchmark driver requires the locked environment, including its existing transitive `psutil` dependency; it accepts explicitly selected implementation, new synthetic workspace, public model-cache state and output paths. It refuses unknown/changed source fixtures. Results exclude content, queries, absolute paths and machine identifiers.
+
+`paired_benchmark.py` confirms read latency with seven alternating baseline/candidate trials against identical verified synthetic state. Its short-lived processes are benchmark isolation only. Use `--baseline-code-root`, `--candidate-code-root`, `--workspace` and a new `--output` path; `performance_benchmark.py --help` describes preparation and resource profiling.
 
 ## Known limitations
 
