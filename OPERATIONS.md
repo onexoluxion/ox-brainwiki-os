@@ -16,9 +16,24 @@ The `state` path's parent directory must exist before `index`, `status` or `serv
 
 Recovery: stop the connector, preserve the failed state privately and select a new unused state path in the config, rerun index, then run `status` and one exact `search` through the connector. Source notes are never changed by indexing; rollback means stop using this connector. Do not remove source data. State contains staged content and vectors and needs the same permissions as the source; do not publish it. The state directory must remain private to the configured Windows user.
 
-Rollout status: independent boundary review, remote scan, clean locked installation, private-corpus acceptance and actual Codex client checks passed. Claude MCP transport connects; in the pilot, model-mediated acceptance was blocked by that environment's API authentication (401), and on 2026-11-06 Claude Code end-to-end (registration, `status` and one exact `search` through the connector) was verified. Full replacement of an existing retrieval setup still requires that acceptance and routine-work quality/latency evidence. Immutable model-download pinning and model redistribution remain open; see MODEL_PROVENANCE.json and THIRD_PARTY_NOTICES.md.
+Initial candidate evidence, recorded 2026-11-06: boundary review, remote scan, clean locked installation, private-corpus acceptance and actual Codex client checks were reported for the versions named in RELEASE_CHECKLIST.md. In the pilot, Claude model-mediated acceptance was blocked by that environment's API authentication (401); on 2026-11-06 Claude Code registration, `status` and one exact `search` through the connector were verified. These dated receipts do not certify later revisions, the current user's installation or newly added acceptance cases. Full replacement of an existing retrieval setup requires checks in its intended clients and routine-work quality/latency evidence. Immutable model-download pinning and model redistribution remain open; see MODEL_PROVENANCE.json and THIRD_PARTY_NOTICES.md.
 
 Release gates: cabinet templates and synthetic routing acceptance, reviewed portable Calibrate rights/security and mode tests, primary-source attribution for the Karpathy foundation, package/license/private-data audit, claimed-platform tests. These were deliberately not substituted with copied private skills.
+
+## Evidence and acceptance
+
+Keep a dated receipt for the exact version and destination being checked. Record the command or tool, exit code or error, inputs covered, observed result and remaining gaps. A process running or a connector reporting Connected establishes availability only. Read the complete result before claiming success: a failed batch can leave valid partial work, and a successful local change can still be absent from another client or destination.
+
+| Claim | Evidence required |
+|---|---|
+| Sources are current | Source inventory matches the receipt; source dates cover the question. A file's checkout time is not its evidence date. |
+| Retrieval works for a task | An exact identifier and a paraphrased question return the expected allowed source; read back the original and check its scope/date. A fresh index alone is not query-quality evidence. |
+| A repair is installed | The installed version or hash matches the reviewed change, followed by a successful operation through the intended client. An isolated test is evidence for that test environment only. |
+| Recovery works | Restore source/configuration backups into a separate private location with unused state, rebuild, then check source hashes, expected retrieval, exclusions and read-only behavior. State explicitly what was not restored. |
+| A recurring process is reliable | Dated receipts from actual unattended runs and an observed failure-notification path, if a scheduler is separately configured. Manual runs do not count as unattended runs. This package adds no scheduler. |
+| Retrieval improved | Comparable before/after corpus versions, held-out questions, configuration and scoring. If a baseline is unavailable, record a new baseline without claiming improvement. |
+
+Before maintenance, inspect the last receipt and any active owner; avoid competing rebuilds. Preserve failed state and logs privately. Reconcile source and destination receipts before retrying or marking work complete. Keep recovery copies until separately authorized cleanup; never delete a lock or weaken access checks to force progress. The recovery and acceptance steps above are procedures, not claims that these checks have run on a user's installation.
 
 ## Uninstall and rollback
 
