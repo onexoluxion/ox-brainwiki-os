@@ -66,3 +66,18 @@ Local pattern-engine secrets scan returned no findings (exit 0). An external inv
 Sequential repeats showed substantial wall-clock drift, including slower listing results despite identical candidate listing code. Keep these samples; do not select the fastest run. `paired_benchmark.py` adds seven alternating baseline/candidate pairs at each size, reversing execution order on alternate pairs. Each trusted implementation runs in a fresh, fixed-lifetime benchmark process after identical synthetic-fixture and healthy-state checks. It measures the same five read operations without resource instrumentation. Database bytes must remain identical before/after each worker and across both implementations; dependencies, model/source identities and result signatures must also match before a report is written.
 
 This confirmation controls execution order rather than claiming an idle or dedicated machine. It is distinct from a long-lived MCP throughput test. Allocation and source-read comparisons still use the shared final resource hooks; alternating trials confirm latency separately. No production worker is introduced.
+
+Run the real-backend acceptance scripts sequentially: they share this checkout's guarded model-cache source, and the exclusive lock intentionally rejects overlapping use.
+
+## Validation for 0.3.0
+
+| Check | Observed result |
+|---|---|
+| `python -m unittest discover -v` | Exit 0; 61 tests run, one existing skip because Windows symlink privilege was unavailable; stdio discovery/exact check also passed |
+| `python runtime_acceptance.py` | Exit 0; real backend and MCP exact/semantic/read/status, one scoped target with 60 distractors, exclusions, corrupt receipt, missing vector and unchanged source hashes |
+| `python acceptance.py` | Exit 0; legacy original-content/exclusion checks plus modification, rename, deletion and stale-index rejection |
+| `uv lock --offline --check` | Exit 0; dependency versions unchanged; only this project's version becomes 0.3.0 |
+| Synthetic benchmark assertions | Exit 0; identity/signature/source checks, frozen exact/allocation/write targets and both alternating confirmations |
+| Local security/privacy | Exit 0; zero pattern-engine secret findings, no private-content pattern matches; independent CWE/LLM and benchmark review found no actionable defect |
+
+The first parallel acceptance launch was rejected by the shared-cache exclusive lock. The sequential rerun passed; locking was not weakened. Failed logs remain outside the distribution. Remote Fast scan findings and the exact reviewed candidate are recorded in the release PR before merge. See [observed results and limitations](PERFORMANCE_RESULTS.md); the measurements do not qualify general semantic/startup/reindex throughput or larger-note capacity.

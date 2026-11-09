@@ -12,7 +12,7 @@ import time
 import performance_benchmark as benchmark
 
 
-def worker(code_root, workspace, size):
+def worker(code_root, workspace, size, semantic_only=False):
     sys.path.insert(0, str(code_root))
     runtime = importlib.import_module('ox_retrieval')
     for name in ('ox_retrieval', 'index_health', 'runtime_receipt', 'state_guard'):
@@ -43,6 +43,9 @@ def worker(code_root, workspace, size):
         'completeness': completeness,
         'new_process_status': fresh_cli,
     }
+    if semantic_only:
+        operations = {'semantic': lambda: app.search(
+            'Why was the aurora calibration postponed?', scope='notes/target')}
     records = []
     for name, operation in operations.items():
         started = time.perf_counter()
@@ -56,17 +59,20 @@ def worker(code_root, workspace, size):
             'provenance': benchmark.provenance(runtime, code_root, workspace)}
 
 
-def paired(baseline, candidate, workspace, pairs):
+def paired(baseline, candidate, workspace, pairs, semantic_only=False):
     trials = []
     for size in benchmark.SIZES:
         for number in range(pairs):
             order = ('baseline', 'candidate') if number % 2 == 0 else ('candidate', 'baseline')
             for label in order:
                 code_root = baseline if label == 'baseline' else candidate
-                result = subprocess.run([
+                command = [
                     sys.executable, str(Path(__file__).absolute()), '--worker',
                     '--code-root', str(code_root), '--workspace', str(workspace), '--size', str(size),
-                ], capture_output=True, check=True, timeout=300)
+                ]
+                if semantic_only:
+                    command.append('--semantic-only')
+                result = subprocess.run(command, capture_output=True, check=True, timeout=300)
                 if len(result.stdout) > 4*1024*1024:
                     raise ValueError('worker output limit')
                 trial = json.loads(result.stdout)
@@ -92,7 +98,8 @@ def paired(baseline, candidate, workspace, pairs):
                                   'p95_ms': max(samples)}
             summaries.append(summary)
     return {'schema': 1, 'condition': 'alternating fresh worker processes; direct calls after health/inventory checks',
-            'pairs': pairs, 'p95_definition': 'observed maximum for seven samples',
+            'pairs': pairs, 'operations': 'semantic' if semantic_only else 'read controls',
+            'p95_definition': f'observed maximum for {pairs} samples',
             'paired_driver_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             'trials': trials, 'summaries': summaries}
 
@@ -106,18 +113,21 @@ def main():
     parser.add_argument('--worker', action='store_true')
     parser.add_argument('--code-root', type=Path)
     parser.add_argument('--size', type=int, choices=benchmark.SIZES)
+    parser.add_argument('--semantic-only', action='store_true')
+    parser.add_argument('--pairs', type=int, choices=(3, 7), default=7)
     args = parser.parse_args()
     if args.worker:
         if args.code_root is None or args.size is None:
             parser.error('worker requires an implementation and size')
-        print(json.dumps(worker(args.code_root.absolute(), args.workspace.absolute(), args.size)))
+        print(json.dumps(worker(args.code_root.absolute(), args.workspace.absolute(), args.size,
+                                args.semantic_only)))
         return
     if args.baseline_code_root is None or args.candidate_code_root is None or args.output is None:
         parser.error('require baseline/candidate implementations and a new output path')
     if args.output.exists():
         parser.error('output already exists')
     report = paired(args.baseline_code_root.absolute(), args.candidate_code_root.absolute(),
-                    args.workspace.absolute(), 7)
+                    args.workspace.absolute(), args.pairs, args.semantic_only)
     with args.output.open('x', encoding='utf-8') as stream:
         json.dump(report, stream, indent=2)
         stream.write('\n')

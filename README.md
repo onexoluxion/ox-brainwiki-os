@@ -83,7 +83,7 @@ Exact search matches during the validated inventory scan, avoiding a second sour
 
 See [performance design and measurement protocol](PERFORMANCE_DESIGN.md) for the frozen acceptance targets, synthetic workload and limits. The benchmark driver requires the locked environment, including its existing transitive `psutil` dependency; it accepts explicitly selected implementation, new synthetic workspace, public model-cache state and output paths. It refuses unknown/changed source fixtures. Results exclude content, queries, absolute paths and machine identifiers.
 
-`paired_benchmark.py` confirms read latency with seven alternating baseline/candidate trials against identical verified synthetic state. Its short-lived processes are benchmark isolation only. Use `--baseline-code-root`, `--candidate-code-root`, `--workspace` and a new `--output` path; `performance_benchmark.py --help` describes preparation and resource profiling.
+`paired_benchmark.py` confirms read latency with seven alternating baseline/candidate trials against identical verified synthetic state. Its short-lived processes are benchmark isolation only. Use `--baseline-code-root`, `--candidate-code-root`, `--workspace` and a new `--output` path; add `--semantic-only --pairs 3` for the small semantic confirmation. `performance_benchmark.py --help` describes preparation and resource profiling. See [observed results and limits](PERFORMANCE_RESULTS.md).
 
 ## Known limitations
 
