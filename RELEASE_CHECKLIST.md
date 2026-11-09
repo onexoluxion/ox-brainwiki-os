@@ -2,6 +2,8 @@
 
 > Historical v0.1 candidate evidence follows. It does not certify a later commit or the current user's installation; use the operator steps below for a new candidate.
 
+For the 0.2.0 runtime update, see [its design, boundaries and validation](RUNTIME_DESIGN.md#validation-for-020). The original receipts below remain unchanged.
+
 Each proof lists the command run, its exit code and the evidence. Proofs ran on 2026-11-06 against commit `ad06a2d360c91c9a8054c0c7413137d82efb9e16`; the only changes after it are this file and one README sentence (registration note). Host: Windows 11, uv 0.12.10, Python 3.12.14, Git 2.55, `LongPathsEnabled = 0`.
 
 ## Release commit

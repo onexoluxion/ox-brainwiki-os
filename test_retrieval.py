@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from ox_retrieval import Retrieval
 
 class Boundaries(unittest.TestCase):
@@ -61,8 +62,13 @@ class Hardening(unittest.TestCase):
                 (r.state/'models/test.onnx').write_bytes(b'synthetic model')
                 db = r.state/'bm/memory.db'; db.write_bytes(b'first')
                 receipt = {'hashes': r.inventory(), 'identity': r.identity(), 'vector_probe':True}
-                (r.state/'receipt.json').write_text(json.dumps(receipt))
-                self.assertTrue(r.status()['fresh'])
+                from runtime_receipt import write_receipt, SCHEMA
+                import time
+                receipt.update(schema=SCHEMA, indexed_at=time.time())
+                write_receipt(r.state/'receipt.json', receipt)
+                # Isolate artifact-change detection; real SQLite parity has its own suite.
+                with patch('ox_retrieval.inspect_index', return_value={'status':'complete', 'reason':'ready'}):
+                    self.assertTrue(r.status()['fresh'])
                 db.write_bytes(b'other')
                 self.assertFalse(r.status()['fresh'])
                 db.unlink()

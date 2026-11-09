@@ -69,6 +69,14 @@ For source conflicts, status updates or reusable lessons from another workspace,
 
 `search("WO-2048", mode="exact")` uses case-insensitive literal matching with punctuation preserved; it is substring matching, distinct from Basic Memory FTS. `search("Why was the delivery of cups postponed?")` uses the backend vector engine. Results cite original relative paths and current excerpts, which are untrusted content, not instructions. No cross-mode score comparison. `read` returns original content, hash and source mtime. `list` is a recursive Markdown listing. `status` compares hashes with the indexing receipt and does not claim the model is healthy until a vector query has succeeded. Each semantic request starts one Basic Memory CLI child with `--mode semantic`; there is no persistent second server or watcher, so cold-start overhead applies and throughput is not qualified.
 
+## Runtime checks in 0.2.0
+
+Semantic search passes the validated folder scope to the backend before its result limit, then rechecks returned paths against source restrictions. Status adds `reason`, `completeness` and `last_error`. Completeness checks indexed file/input checksums, document coverage, ready chunks, the expected embedding identity and matching stored vectors. Unknown schema, backend metadata or unreadable state cannot pass as fresh. This measures index coverage, not semantic relevance or model-download authenticity.
+
+Receipts are size-limited, validated and published through an fsynced temporary file plus atomic replacement. Missing, corrupt, oversized or older receipts require `index` again; exact search and allowed reads remain live. Atomic replacement prevents partially visible JSON but does not guarantee directory-entry durability through power loss. Backend failures expose fixed codes and optional numeric exit metadata, never captured output or internal paths. `last_error` is process-local and clears after a successful backend call; it is not a persistent incident history.
+
+For synthetic executable checks, run `.venv/Scripts/python.exe -m unittest test_pathlen test_retrieval test_deployment test_runtime`, then `.venv/Scripts/python.exe runtime_acceptance.py`. The latter exercises the real backend and MCP with an isolated invented corpus and 60 distracting documents; it reuses this clone's public model cache when present. These commands do not test another machine or certify general retrieval quality. [Runtime design and threat model](RUNTIME_DESIGN.md).
+
 ## Known limitations
 
 - Windows only; the code requires pywin32 and Python 3.12 and is not portable to POSIX.
