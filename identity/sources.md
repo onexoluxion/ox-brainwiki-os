@@ -1,6 +1,6 @@
 # Sources
 
-Filled by `/onboard` step 2 on {{FILLED_DATE}}. Pointers only: nothing listed here is copied, ingested or indexed by onboarding. Only the notes folder under the root is indexed by the retrieval connector.
+Rendered into the private vault's `05_Identity/sources.md` by onboarding step 2 on {{FILLED_DATE}}. Keep this source template unchanged in the clone. Other sources are pointers only; naming them does not authorize copying or ingestion. Retrieval indexes only the selected curated folder.
 
 ## Root folder
 
@@ -8,11 +8,11 @@ Filled by `/onboard` step 2 on {{FILLED_DATE}}. Pointers only: nothing listed he
 
 Why this field exists: the connector reads from one root and nowhere else; naming it here makes the boundary visible to the operator and the agent.
 
-## Notes folder (under the root)
+## Curated notes folder (under the root)
 
 {{NOTES_FOLDER}}
 
-Why this field exists: an existing notes folder is kept as-is; this line records which subfolder the connector is allowed to index.
+Why this field exists: new vaults use `01_Wiki`; existing vaults keep their selected curated folder. This line records the relative subfolder the connector is allowed to index. Raw, Archive, Identity and app settings stay outside the default scope.
 
 ## Other sources (pointers)
 

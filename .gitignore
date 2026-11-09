@@ -4,3 +4,9 @@ __pycache__/
 *.pyc
 
 .state-secure/
+
+# Legacy generated onboarding files; new setups keep these outside the clone.
+/brainwiki.json
+/retrieval.config.json
+/identity/onboard-log.md
+.obsidian/
