@@ -15,10 +15,11 @@ The following checks ran on Windows with the locked Python 3.12 environment. All
 | Scope boundary | Raw, Identity and Archive markers absent from exact search; direct reads rejected |
 | Capture and source integrity | Approved source moved byte-for-byte to a new archive path; indexing and reads left all source hashes unchanged |
 | Stale state | A disposable note edit caused semantic refusal; restoring/reindexing recovered fresh state |
+| Existing custom scope | Separate disposable `Knowledge` folder with `Home.md` index passed real-backend exact/semantic/list/read checks; Raw stayed excluded, source hashes stayed unchanged, and no competing `01_Wiki` was created. Follow-up forward review used custom `Inbox`/`Sources` capture/archive locations. |
 | Local references | 45 relative file links resolved across onboarding, scaffold and related guides |
 | Local secrets | `rafter secrets . --engine patterns --json`, exit 0, zero findings; secrets-only, not SAST/SCA |
 | Private-content sweep | 62 distributable files checked for known private identifiers, account strings and machine/vault paths; zero matches |
-| Independent read-only review | Fresh/existing-vault scenarios reviewed; scope, trust, rerun and pending-verification clarifications applied |
+| Independent read-only review | Fresh/existing-vault scenarios reviewed; scope, trust, rerun and pending-verification clarifications applied. Automated review found a hardcoded new-vault promotion path; existing-vault promotion and index selection now follow the recorded curated folder. |
 
 Security surface review: documentation, first-party agent guidance and static text templates only; no runtime implementation, dependency, permissions or network endpoint changed. Review covered untrusted-source instructions, explicit write authorization, private-output placement, literal/contained paths, non-overwriting archival moves and narrow retrieval scope. Under the docs-only quota rule, no remote Rafter scan was run.
 
