@@ -2,7 +2,7 @@ import json, os, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from unittest.mock import patch
 import win32api, win32security
-from ox_retrieval import Retrieval, pinned_directories
+from ox_retrieval import Retrieval, pinned_directories, RuntimeFailure
 from state_guard import validate_acl
 
 class DeploymentBoundaries(unittest.TestCase):
@@ -96,8 +96,9 @@ class DeploymentBoundaries(unittest.TestCase):
             for target in ('CreateJobObject', 'QueryInformationJobObject', 'SetInformationJobObject'):
                 with patch('ox_retrieval.win32job.' + target, side_effect=OSError('setup failed')):
                     with patch('ox_retrieval.subprocess.Popen') as launch:
-                        with self.assertRaises(OSError):
+                        with self.assertRaises(RuntimeFailure) as error:
                             r.backend('ignored')
+                        self.assertEqual(error.exception.code, 'backend_start_failed')
                         launch.assert_not_called()
 
     def test_corpus_byte_budget(self):
