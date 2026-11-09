@@ -14,7 +14,23 @@ Read the project entry map, its selected guide and package identity, then the re
 
 - [Sample project](example/PROJECT_INDEX.md): follow its selected guide, read the evidence, inspect the dated result.
 - [Index template](templates/PROJECT_INDEX.md) and [task guide template](templates/task-and-source-guide.md): for an existing project keep its entry point and records; adapt these only when navigation is missing, and replace every double-braced placeholder before use. Do not add unused directories or relocate records.
-- [Acceptance cases](acceptance-cases.md): eleven read-only prompts for a fresh reviewer, with the expected routes held back until scoring.
+- [Acceptance cases](acceptance-cases.md): seventeen read-only prompts for a fresh reviewer, with the expected routes held back until scoring.
+
+## Updating project records
+
+Read a known authoritative path directly. Use exact lookup for identifiers and semantic discovery for unknown locations, then open the original source. Retrieved excerpts and handoffs are dated leads: compare them with the maintained source and any later receipt before carrying an old blocker forward. Newer timestamps alone do not establish authority. Preserve conflicting evidence and report an unresolved conflict when coverage or ownership differs.
+
+For each status update, name the source, its as-of date, affected version/destination, what was observed, and what remains unverified. Distinguish proposed, tested in isolation, applied locally, and verified at the intended destination. Keep historical results dated; edit the maintained entry map or current result rather than rewriting old evidence. [Operations evidence checks](../OPERATIONS.md#evidence-and-acceptance) define the proof needed for installation, recovery, recurring reliability and improvement claims.
+
+## Updating core guidance
+
+When adapting a lesson from another workspace:
+
+1. State the demonstrated failure and extract the general method. Check existing guidance before adding a duplicate rule. Knowledge about a business stays in that business's reviewed capture process; operating methods belong in the maintained core guide or template.
+2. Author a small change using invented names, dates, identifiers and amounts. Keep private notes, customer or account details, machine paths, credentials, logs, receipts and private-source links out of the package, including its commit messages and review description. Keep any sensitive provenance in its original private workspace.
+3. Review the exact diff, validate local links and exercise the affected routing cases with a fresh read-only reviewer. For a measured improvement, retain a comparable baseline; passing an acceptance case alone establishes that case only. Report unavailable client/platform checks explicitly.
+
+Preserve the existing capture/write boundary and follow the repository's branch, security and release gates. Updating guidance does not install a service, change client configuration or publish a release. A publication needs its own authorization. Use the selected project template to carry this evidence discipline into new cabinets without copying the originating business records.
 
 ## Calibrate modes
 

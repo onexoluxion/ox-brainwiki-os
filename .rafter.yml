@@ -1,11 +1,4 @@
-# Rafter project policy — CANONICAL TEMPLATE
-# Copy to a new project root as `.rafter.yml`, then tune scan.exclude_paths.
-# Scope decision: 03_Operations/decisions/2026-07-20-rafter-scope.md
-#
-# Unlike ox-depgraph, this template is NOT a copied executable — there is no
-# version stamp and no drift problem, because the Rafter CLI itself is a single
-# global install (`npm i -g @rafter-security/cli`). This file is a starting
-# policy, not a program. Diverging per project is expected and fine.
+# Rafter policy for this package. Review exclusions for the intended project.
 
 version: "1"
 
@@ -15,61 +8,34 @@ command_policy:
   # allow-all | approve-dangerous | deny-list
   mode: approve-dangerous
 
-  # ⚠️ PRECEDENCE TRAP — READ BEFORE UNCOMMENTING ⚠️
-  # command_policy ARRAYS REPLACE the global config wholesale; they do not
-  # merge. Declaring `blocked_patterns` here silently discards every global
-  # pattern (rm -rf /, fork bomb, dd to raw disk, force-push, curl|bash).
-  # Leave both commented unless you restate the full global list.
-  #   Global list lives in: ~/.rafter/config.json → agent.commandPolicy
+  # Policy arrays can replace inherited rules. Review the effective policy
+  # before adding a local list; retain the global safeguards.
   # blocked_patterns: []
   # require_approval: []
 
 scan:
-  # ADDED to Rafter's built-ins (node_modules, .git, dist, build, .next,
-  # coverage, .vscode, .idea) — these are never scanned regardless.
+  # Explicit exclusions for installed dependencies, generated state and output.
   exclude_paths:
     - ".venv"
     - ".state"
     - ".state-secure"
     - "__pycache__"
-    # Lockfile `integrity` sha512 hashes match the AWS-secret-key regex.
-    # Confirmed false positive on every Node repo scanned 2026-07-20.
+    # Integrity hashes can resemble secrets; review findings before excluding.
     - "package-lock.json"
     - "pnpm-lock.yaml"
     - "yarn.lock"
     # Compiled/generated output that is not source of truth.
     - "*.node"
     - "*.dll"
-    # ⚠️ MATCHING RULES — measured 2026-07-20, they are not what the docs imply:
-    #   • FILE globs work:            "*.eml" suppresses .eml at any depth.
-    #   • DIRECTORY globs DO NOT:     ".next-*" and "**/.next-*" both matched
-    #     nothing. A directory must be named LITERALLY.
-    #   • A literal bare dir name matches at ANY depth: ".next" also covers
-    #     "apps/web/.next" in a monorepo. Use the bare name, not a path.
-    #   • The documented built-ins did NOT suppress these under the Betterleaks
-    #     engine — restate them explicitly rather than trusting the defaults.
-    # Next.js build manifests embed base64 chunk hashes matching the
-    # generic-api-key detector (17 false positives across uigen and
-    # clr-flat-file-app). A port-suffixed dev dir like ".next-3799" must be
-    # added by exact name when it appears — there is no glob for it.
+    # Verify matching behavior with the installed scanner before extending.
     - ".next"
     - "dist"
     - "build"
     - "coverage"
-    # Saved email and Outlook dumps: base64 MIME parts trip credential regexes.
+    # Saved MIME content can contain encoded data that resembles credentials.
     - "*.eml"
     - "*.msg"
-    # A saved Outlook COPY-PASTE exported as .html (not .eml/.msg) has the SAME
-    # false-positive shape but a different extension the two globs above miss.
-    # Measured 2026-08-31 on inventory-management: one such file (485 KB across
-    # only 44 lines) produced 16 "CRITICAL AWS Secret Access Key" hits, all on 3
-    # lines — each line was a huge `<img src="data:image/png;base64,...">`
-    # embedded screenshot, not a credential. Long base64 image data inevitably
-    # contains substrings shaped like the regex. There is no safe blanket
-    # "*.html" exclusion here (most .html in a project is real content that
-    # should stay scanned) — add the SPECIFIC filename by exact name once you
-    # have verified it the same way: read the raw bytes, confirm the flagged
-    # lines are `data:image/...;base64,` URIs, not prose describing a key.
+    # Keep HTML scanned. Review any encoded-image false positive individually.
 
   # ADDED to Rafter's built-in patterns, never a replacement.
   # Credential shapes worth detecting everywhere.

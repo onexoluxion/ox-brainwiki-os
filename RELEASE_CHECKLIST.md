@@ -1,5 +1,7 @@
 # Release checklist
 
+> Historical v0.1 candidate evidence follows. It does not certify a later commit or the current user's installation; use the operator steps below for a new candidate.
+
 Each proof lists the command run, its exit code and the evidence. Proofs ran on 2026-11-06 against commit `ad06a2d360c91c9a8054c0c7413137d82efb9e16`; the only changes after it are this file and one README sentence (registration note). Host: Windows 11, uv 0.12.10, Python 3.12.14, Git 2.55, `LongPathsEnabled = 0`.
 
 ## Release commit
@@ -62,6 +64,8 @@ Each proof lists the command run, its exit code and the evidence. Proofs ran on 
 
 ## Publish steps (operator)
 
-1. Optional fresh-clone proof on a short path (one script, each step gated): run `2026-11-06-ox-brainwiki-os-fresh-clone-proof.ps1` from the vault project folder and read its last line.
-2. Review this checklist and `README.md`.
-3. Run `2026-11-06-ox-brainwiki-os-publish.ps1` from the vault project folder: it checks the repository is still private and the release commit is on `origin/main`, then makes the repository public and creates tag and release `v0.1.0`. It prints `Done` only when all steps succeeded.
+The receipts above describe the initial candidate, not later changes or a new release. Recheck affected proofs for the exact candidate commit and retain dated results. This package does not depend on scripts from another workspace.
+
+1. Record the reviewed candidate's full commit hash, clone into a new short-path directory and check out that exact commit. Follow [Install](README.md#install), then check the fixture queries, read-only behavior and exclusions from Proof 1. Record unavailable checks explicitly; do not relabel an existing-install run as a fresh-clone run.
+2. Exercise the relevant [cabinet acceptance cases](cabinet/acceptance-cases.md), review this checklist and README, and run the local secrets/private-content checks on the complete proposed tree. Check metadata, commit messages and review text as well as files; keep identities, account data, private paths, evidence and links out of the distributable. Verify the scan can detect a disposable positive control outside the release tree before relying on a zero result.
+3. Have the repository owner review the exact commit, remaining limitations, licensing and intended audience. Only after explicit publication approval, confirm that commit is on the intended release branch and use the owner's repository hosting workflow to set visibility and create a tag/release. Read back visibility and the tag's commit before reporting publication. Preparing a branch or passing these checks does not grant publication permission.
