@@ -1,6 +1,6 @@
 # Agent voice
 
-Filled by `/onboard` step 3 on {{FILLED_DATE}}. This file sets how the agent talks, not what it knows.
+Rendered into the private vault's `05_Identity/agent-voice.md` by onboarding step 3 on {{FILLED_DATE}}. Keep this source template unchanged in the clone. This file sets how the agent talks, not what it knows.
 
 ## Agent name
 

@@ -2,7 +2,7 @@
 
 All example business data, events and decisions in this folder are invented. The cabinet is a filing convention: one entry map per project (`PROJECT_INDEX.md`) and one compact task-and-source guide, so that every task starts from the same door, reads the authoritative source for that task, and leaves its result in a permitted dated destination. It adds navigation; it never duplicates or reorganizes the business records it points at.
 
-The skills that operate it ship in `../skills/`: `ox-project-cabinet` builds and uses a cabinet, `calibrate` turns session lessons into operating-layer changes, and `calibrate-cabinet` repairs a cabinet after a demonstrated routing failure. The `/onboard` skill writes your first cabinet from your answers.
+The skills that operate it ship in `../skills/`: `ox-project-cabinet` builds and uses a cabinet, `calibrate` turns session lessons into operating-layer changes, and `calibrate-cabinet` repairs a cabinet after a demonstrated routing failure. [Onboarding](../skills/onboard/SKILL.md) writes your first cabinet from your answers under the private vault's `Projects/<slug>/`. It preserves existing cabinets and leaves the code clone's templates unchanged. Obsidian opens the vault root, including Projects; retrieval defaults to curated Wiki knowledge only.
 
 ## Retrieval and the cabinet divide authority
 

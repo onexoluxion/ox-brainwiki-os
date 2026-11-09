@@ -1,6 +1,6 @@
 # Goals
 
-Filled by `/onboard` step 3 on {{FILLED_DATE}}. One to three goals for {{GOAL_YEAR}}; leave an unused goal as `none`.
+Rendered into the private vault's `05_Identity/goals.md` by onboarding step 3 on {{FILLED_DATE}}. Keep this source template unchanged in the clone. One to three goals for {{GOAL_YEAR}}; record an intentionally unused goal as `none`, and an unanswered goal as `pending`.
 
 ## Goal 1
 

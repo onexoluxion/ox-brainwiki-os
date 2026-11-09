@@ -1,6 +1,6 @@
 # Business
 
-Filled by `/onboard` step 3 on {{FILLED_DATE}}. Replace every double-braced placeholder in your own words; a skipped step writes `skipped <date>` instead of a default.
+Rendered into the private vault's `05_Identity/business.md` by onboarding step 3 on {{FILLED_DATE}}. Keep this source template unchanged in the clone. Fill answers in the user's own words; record unanswered fields as pending and skipped/declined fields explicitly.
 
 ## Name
 

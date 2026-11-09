@@ -1,67 +1,106 @@
 ---
 name: onboard
-description: Guided onboarding that customizes OX BrainWiki OS to the user's business by asking questions and writing the answers into the user's own files.
+description: Set up OX BrainWiki OS with the free Obsidian app, Wiki folders, private identity and project records, reviewed capture, and verified read-only retrieval. Preserve existing vaults and report incomplete setup accurately.
+metadata:
+  version: "2026.11.09"
 ---
 
-# onboard
+# Onboard
 
-Six steps. Each step is re-runnable alone (`/onboard 3` runs step 3 only) and touches only its own files; re-running one step leaves every other step's files unchanged. Every write carries the date from the operating system clock, never a remembered one. A step the user skips writes `skipped <date>` into every placeholder it owns, never a default value. Install nothing. Ask the questions in the user's language; write the answers verbatim, in the user's words. All paths below are relative to the repository clone unless marked `<root>`. Record each step's outcome as one line in `identity/onboard-log.md`: `step N: done <date>`, `step N: skipped <date>`, or `step N: not done <date> (<reason>)` when one of the step's commands failed.
+Six resumable steps. Follow this file directly, or use `/onboard N` if the skill is installed in the chosen agent. This is guided setup, not an unattended installer. Obsidian is the standard desktop component; the retrieval runtime remains independent of the app.
 
-## Step 1: requirements check
+Keep three separate locations:
 
-Ask nothing. If `identity/onboard-log.md` is absent, create it with the header `# Onboarding log` and one line naming the line format: `step N: done <date> | skipped <date> | not done <date> (<reason>)`. Then run each command and record its exit code; a non-zero exit is a missing item, reported and not installed:
+| Location | Contents |
+|---|---|
+| `<repo>` | Clean code clone and unchanged source templates |
+| `<vault>` | User's private Markdown Wiki, opened as one Obsidian vault |
+| `<runtime>` | Private local folder containing `retrieval.config.json`, `state/` and `onboard-log.md` |
 
-- `uv --version` (uv, the installer this repository pins its dependencies with)
-- `uv python find 3.12` (Python 3.12; this release is Windows-only and needs it)
-- `git --version` (Git)
-- `claude --version` or `codex --version` (one agent CLI is enough; report which one answered)
+Use the operating system date. Record each step as `done`, `pending`, `skipped` or `declined`, with date, command/tool results and remaining gaps in `<runtime>/onboard-log.md`. Until that safe location is selected, keep results in the response. Ask in the user's language and record their actual answers. Missing answers stay pending; never invent a profile or fill templates with defaults. Reuse prior answers and authorization. Before each write, inspect the destination, preserve user edits and check for concurrent changes. A rerun creates only missing scaffold files and updates only the selected step's owned files after presenting the proposed diff.
 
-Write the four results to `identity/onboard-log.md` under `## Requirements <date>`. Re-run: replaces that section only.
+## Step 1: requirements
 
-## Step 2: private folder and sources
+Check Windows, `uv --version`, `uv python find 3.12`, `git --version`, and the chosen agent CLI or desktop client. Record versions and exit codes. Run `uv sync --frozen --python 3.12` from `<repo>` when installation is authorized. This release requires Windows and Python 3.12.
 
-Ask: (a) the root folder for your private knowledge (an existing folder is kept exactly as it is; when a proof run scripts the answers, the answer file `example-answers.md` supplies it); (b) the notes subfolder under that root that holds Markdown notes (default answer: `notes`; it may be empty today); (c) up to three other sources the business relies on, each as name, where it lives, what it holds. Pointers only: nothing is copied or ingested.
+Check whether Obsidian is installed. If missing, guide installation from the [official download](https://obsidian.md/download), using its normal installer when authorized. The [base app is free for personal and commercial use](https://obsidian.md/license); no account, Sync, Publish or community plugins are required. Obsidian is separately licensed and installed; its binary is not bundled here. Do not run remote installation scripts. An installed executable alone does not prove the vault opened; that is step 3. Missing requirements remain pending.
 
-Write `identity/sources.md`: `{{FILLED_DATE}}` = date; `{{ROOT_FOLDER}}` = (a) with forward slashes; `{{NOTES_FOLDER}}` = (b); `{{SOURCE_1_NAME}}`, `{{SOURCE_1_LOCATION}}`, `{{SOURCE_1_HOLDS}}` = the first row of (c), the same for rows 2 and 3, unused rows = `none`. If the notes folder does not exist, create it empty and say so. Re-run: rewrites `identity/sources.md` only.
+## Step 2: create or adopt the Wiki
 
-## Step 3: identity
+Ask for the vault root, a separate private runtime folder, whether the vault is new or existing, and up to three source pointers (name, location, what it holds). Select absolute resolved paths under operator-selected existing parents. Vault, runtime and repository must not overlap or nest within each other. Reject linked/reparse-point destinations, aliases to protected locations and system/configuration folders. Use literal filesystem APIs for user paths; preserve source ACLs. The runtime parent must exist before retrieval starts, and the state path should be short (see [Operations](../../OPERATIONS.md#configuration)).
 
-Ask: business name; what it sells and where (channels); one to three goals for the coming year; the operator's role and weekly hours limit; the agent's name, register (direct and dense, plain words, or formal), answer shape, and any banned words. Then offer the optional decision filters exactly once: "Do you want the three optional decision filters (Ghost Town, ARR, two-way doors) kept in your goals file?".
+For a new vault, copy the text scaffold from [assets/wiki](assets/wiki/README.md), creating only missing files. Create the following siblings plus `00_Raw/_proposals/` and `03_Operations/handoffs/`:
 
-Write three files. `identity/business.md`: `{{BUSINESS_NAME}}`, `{{WHAT_IT_SELLS}}`, `{{CHANNELS}}`, `{{OPERATOR_ROLE}}`, `{{HOURS_LIMIT}}`, `{{FILLED_DATE}}`. `identity/goals.md`: `{{GOAL_YEAR}}`, `{{GOAL_1}}`, `{{GOAL_2}}`, `{{GOAL_3}}` (unused = `none`), `{{DECISION_FILTERS}}` = `accepted <date>` or `declined <date>`, `{{DAILY_LOG_MODULE}}` = `off`, `{{FRIDAY_AUDIT_MODULE}}` = `off` (both modules stay off unless the user asks for one by name), `{{FILLED_DATE}}`. `identity/agent-voice.md`: `{{AGENT_NAME}}`, `{{REGISTER}}`, `{{ANSWER_SHAPE}}`, `{{BANNED_WORDS}}` (none = `none`), `{{FILLED_DATE}}`. Re-run: rewrites these three files only; `identity/sources.md` is untouched.
-
-## Step 4: first cabinet
-
-Ask: the first project's name and one-line purpose; its two authoritative sources, and for each source five answers: name, location, what it decides, which task this source answers, what evidence it holds and as of when; where results and dated handoffs for this project may be saved; one known gap (something the project cannot see or confirm today). Derive a folder slug from the project name (lowercase, hyphens).
-
-Copy `cabinet/templates/PROJECT_INDEX.md` to `<root>/<slug>/PROJECT_INDEX.md` and `cabinet/templates/task-and-source-guide.md` to `<root>/<slug>/task-and-source-guide.md`, then replace: `{{PROJECT_NAME}}` = name; `{{PURPOSE}}` = purpose; `{{RELATIVE_GUIDE_REFERENCE}}` = the Markdown link `[task-and-source-guide.md](task-and-source-guide.md)`; `{{NAME}}` = `ox-project-cabinet`; `{{VERSION}}` = the `metadata.version` in `skills/ox-project-cabinet/SKILL.md`; `{{PORTABLE_SOURCE_AND_PROVENANCE}}` = `skills/ox-project-cabinet/SKILL.md in this clone of OX BrainWiki OS`; `{{MAINTAINED_SOURCE_LOCATIONS_AND_SCOPE}}` = both sources with what each decides; `{{PERMITTED_EXISTING_DESTINATION}}` = the results location; `{{ACCESS_FRESHNESS_OR_COVERAGE_GAPS}}` = the gap. In the guide: `{{AS_OF_DATE}}` = date; duplicate the single table row so there is one row per source, then per row `{{TASK}}` = the answer to "which task does this source answer", `{{REFERENCE}}` = the source location, `{{AUTHORITY}}` = the source name, `{{EVIDENCE_AND_DATE}}` = the answer to "what evidence does it hold and as of when", `{{DESTINATION}}` = the results location; `{{KNOWN_GAPS}}` = the gap. Verify no `{{` remains in either file. Re-run: rewrites the two files in `<root>/<slug>/` only.
-
-## Step 5: retrieval
-
-Ask: one exact identifier the business uses (an order, certificate or ticket number that appears in a note) and one question in plain words whose answer is in a note. Confirm the notes folder from step 2 (`{{NOTES_FOLDER}}`).
-
-Write `retrieval.config.json` in the repository clone with exactly these four keys (the connector rejects any other shape; relative paths resolve beside this file):
-
-```json
-{"root": "<root with forward slashes>", "state": ".state", "allow": ["<notes folder>"], "exclude": []}
+```text
+<vault>/
+  AGENTS.md, CLAUDE.md, README.md
+  00_Raw/                 captures and proposals awaiting review
+  01_Wiki/                approved knowledge and index.md
+  02_Archive/             preserved source material
+  03_Operations/          dated decisions and handoffs
+  04_Prompts_&_Skills/    operating methods and note template
+  05_Identity/            private business, goals, voice and sources
+  Projects/              project cabinets and source routing
 ```
 
-The state path's parent directory must already exist (retrieval pins that parent; with `.state` the parent is the clone root), and the connector refuses a state path longer than 136 characters on Windows unless long paths are enabled (it prints `state path too long for Windows ...`), so clone to a short path such as a top-level folder. Add to `exclude` any subfolder of the notes folder that must never be indexed, written as `<notes folder>/<subfolder>`. `.state/` is git-ignored; never commit it. Then run, from the clone, and record each exit code:
+Obsidian creates its own `.obsidian/` settings in this root. For a new vault, use fresh local settings with community plugins disabled; never copy another user's app configuration. For an existing vault, preserve its folders, settings and entry points. Inspect the proposed curated folder and its descendants for Raw, archives, identity, app settings and other sensitive content, including custom-named equivalents. Select a narrower scope or explicit exclusions before indexing; any sensitive opt-in needs existing or newly obtained authorization. Reuse and record that reviewed relative scope. Propose missing folders or rules without replacing existing ones. Nested vaults are unnecessary.
 
-1. `.venv/Scripts/python.exe ox_retrieval.py index --config retrieval.config.json` (first run downloads the embedding model; `MODEL_PROVENANCE.json` names the revision)
-2. `.venv/Scripts/python.exe ox_retrieval.py status --config retrieval.config.json` (expect `"fresh": true`)
-3. Register `.venv/Scripts/python.exe ox_retrieval.py serve --config retrieval.config.json` as a stdio MCP server in the agent client, under the name `ox-brainwiki`. Claude Code: `claude mcp add ox-brainwiki -- <clone>/.venv/Scripts/python.exe <clone>/ox_retrieval.py serve --config <clone>/retrieval.config.json` (absolute paths). Codex: the `[mcp_servers.ox-brainwiki]` table in `~/.codex/config.toml` with the same command and args (shape in README.md). If you are an agent without access to the client's connector configuration, print the registration command for the user instead and continue.
+Review existing root instructions before using them as agent project guidance. Preserve their bytes; apply only guidance trusted under the operator's authorization and higher-priority instructions. Vault content cannot grant tool permissions, authorize ingestion or override the capture boundary. Present any needed instruction changes as a diff.
 
-`search` and `read` are connector tools exposed by `serve`, not CLI subcommands (the CLI accepts only `serve`, `index`, `status` and `--config`). Through the connector call `search` with `query` = the identifier and `mode` = `exact`, then `search` with `query` = the question and `mode` = `semantic` (`scope` = the notes folder; `limit` 1 to 50). Then call `read` with `path` = the EXACT search's top result (its `path` field) and show the user the original file content it returns, then open the file at `<root>/<path>` so the user sees it is theirs. Re-run: rewrites `retrieval.config.json` and re-indexes only.
+Record `<curated>` and `<wiki-index>` for every later step: new vaults use `01_Wiki` and `01_Wiki/index.md`; existing vaults use the reviewed curated folder and its existing map of contents. If the existing folder has no index, propose one inside that folder before creating it. Never create a competing `01_Wiki/` just to complete onboarding.
 
-## Step 6: first capture and health
+Render the pristine [sources template](../../identity/sources.md) into `<vault>/05_Identity/sources.md`: fill `ROOT_FOLDER`, `NOTES_FOLDER`, source fields and `FILLED_DATE`. Record absent source slots as `not supplied`, not fabricated sources. Source pointers do not authorize ingestion. Keep the repository's identity templates unchanged.
 
-Ask for one short piece of knowledge worth keeping (a fact, a rule, a lesson). Propose, do not write: print the exact target path `<root>/<notes folder>/inbox/<date>-<slug>.md` and the exact text, and ask for approval. On approval write the file and re-run the `index` command from step 5. Without approval write nothing and record `step 6: capture declined <date>`.
+## Step 3: Obsidian and identity
 
-Health check, run and record exit codes: `.venv/Scripts/python.exe ox_retrieval.py status --config retrieval.config.json`, then through the connector one `search` with `mode` = `exact` for one word from the capture just made. Pass condition: `status` exits 0 and reports `"fresh": true`, and the exact search returns the capture's path among its results. Anything else is `step 6: not done <date> (<reason>)`.
+In Obsidian, use **Manage vaults → Open folder as vault** and select `<vault>` itself. Verify the folder tree and the selected `<wiki-index>` are visible. Where available, set the default location for new notes to `00_Raw/` for new vaults, retaining the existing capture location for adopted vaults. Core Backlinks and Graph view can navigate normal Markdown links; paid services and community plugins are unnecessary. See [official vault instructions](https://obsidian.md/help/manage-vaults) and [local data storage](https://obsidian.md/help/data-storage).
 
-Print the two habits: daily, "Capture once into `<notes folder>/inbox/`, then run `index`"; weekly, "Read the week's captures, approve what belongs in your notes, run `status`". Daily log and Friday audit are optional modules, off by default (see `identity/goals.md`).
+Record whether the app/vault was observed directly or confirmed by the operator. If the UI is unavailable, mark desktop verification pending and continue independent runtime work. Never equate installation with a successful UI check.
 
-## End of run
+Ask for business name, offer/channels, operator role/hours, one to three annual goals/year, agent name, register, answer shape and banned words. Fill the pristine [business](../../identity/business.md), [goals](../../identity/goals.md) and [voice](../../identity/agent-voice.md) templates into `<vault>/05_Identity/`. Offer optional decision filters once; record a decline. Daily-log and weekly-audit module fields remain `off` unless explicitly requested; this package creates no scheduler. Resolve every template field with an answer or an explicit pending/declined marker; an intentionally unused goal is `none`. A step-3 rerun owns only these three generated files, its log entry and specifically requested Obsidian settings; preserve sources, cabinets, captures and retrieval configuration.
 
-Print: each step as done, skipped, declined or not done with its date; every file written with its path; every command run with its exit code; the two habit lines; and what was not verified (for example, a step whose command failed). Never report a step as done when its command failed.
+## Step 4: first project cabinet
+
+Ask for project name, purpose, authoritative source per task, evidence/as-of date, result destination and known gaps. Create `<vault>/Projects/<slug>/PROJECT_INDEX.md` and `task-and-source-guide.md` using the [cabinet templates](../../cabinet/templates/PROJECT_INDEX.md). Use a lowercase alphanumeric/hyphen slug of at most 64 characters; reject traversal, separators and Windows reserved names. Replace every double-braced field, retaining package identity/version instructions. Existing cabinets receive a reviewed diff instead of replacement.
+
+Cabinets point to original sources, including external codebases and business systems; they do not duplicate records. Results go to the selected authorized destination. Use dated `03_Operations/handoffs/` records only when that destination is selected. Missing access stays a recorded gap.
+
+## Step 5: first reviewed knowledge
+
+Select an existing approved note with a distinctive identifier and a paraphrased question for acceptance. If no approved knowledge exists, ask for one short fact. Present the proposed source text, origin label, raw path, curated note, archive destination and index link together. Use the [note template](assets/wiki/04_Prompts_&_Skills/wiki-note-template.md); flag inferences until confirmed. Show the exact proposed changes before seeking approval when approval is missing. Prior authorization covering those changes is sufficient.
+
+An approval can cover the named capture, promotion, archival move and index link together. Capture-only permission does not authorize promotion. Use the existing vault's capture/archive locations, or `00_Raw/` and `02_Archive/` for a new vault; record those locations before proposing changes. After approval: save the source in the selected Raw folder, write the reviewed knowledge under `<curated>/`, link it from `<wiki-index>` (removing any initial empty-state sentence), then move the exact source to a new path in the selected Archive folder. Verify source bytes before and after the move; resolve both paths inside the selected vault and never overwrite an archive entry. The curated note cites that archived source with a link relative to its final location. Existing source archives remain unchanged. A declined or pending capture stays in Raw, outside retrieval. Do not seed a real vault with fictional facts to make acceptance pass.
+
+## Step 6: retrieval and acceptance
+
+Write `<runtime>/retrieval.config.json`, outside both vault and clone. For a new vault, use the following object, replacing the illustrative paths with the selected absolute paths. For an existing vault, substitute its approved curated folder.
+
+```json
+{"root":"C:/BrainWiki/Vault","state":"C:/BrainWiki/Runtime/state","allow":["01_Wiki"],"exclude":[]}
+```
+
+Only `root`, `state`, `allow` and `exclude` are accepted. Raw, proposals, Archive, prompts, Projects and app settings stay outside the default retrieval scope. Operations and Identity require explicit sensitivity review and opt-in. Never widen to the entire root to make a query pass. Current limits: 1 MiB per source, 32 MiB total source bytes, 1,000 documents, 100,000 chunks, 300-second backend timeout. These are bounds, not a capacity/performance guarantee.
+
+When upgrading an early onboarding that stored answers/configuration in the clone, inspect those files privately and reuse the answers. Present a migration diff to the selected private Identity/runtime destinations; preserve originals until verification and separately authorized cleanup. Update the client to the external configuration, rebuild and verify with the new scope. Keep generated user content out of commits. This guide does not silently move an existing vault or rewrite its archive.
+
+Run from `<repo>` with the selected configuration:
+
+```powershell
+.venv/Scripts/python.exe ox_retrieval.py index --config "<runtime>/retrieval.config.json"
+.venv/Scripts/python.exe ox_retrieval.py status --config "<runtime>/retrieval.config.json"
+```
+
+Require exit 0, `fresh: true` and complete coverage. Compare source hashes before/after to prove indexing did not edit notes. Initial model download requires network; inference is local. Content returned to an AI client follows that client's model/data settings. Commands without `--config` use bundled developer fixtures and do not verify the user's installation.
+
+Register the absolute server and external config paths in the chosen agent using [Agent connection](../../README.md#agent-connection). Preserve unrelated client configuration. Then verify through that actual client:
+
+1. Exactly four read-only tools: `search`, `read`, `list`, `status`.
+2. `list(path="<curated>")`, an exact identifier search and a semantic paraphrase with `scope="<curated>"` return the expected approved note. Substitute the actual recorded folder (`01_Wiki` for a new vault). Tool defaults use `notes`, so pass the scope explicitly.
+3. Read the original result and compare its hash/content with the same file opened in Obsidian. Open its archive citation through Obsidian; archival provenance does not require indexing the archive.
+4. A separate pending Raw capture with a distinctive identifier is absent from search/list and a direct read of that path is rejected. Permission to create this test capture does not approve it for promotion. Use an existing pending capture when possible; adding test data to a live vault requires authorization.
+
+Use fictional acceptance data only in an explicitly disposable synthetic vault/copy; an operator-selected new production vault still needs real operator-supplied knowledge. If checking stale-index behavior, edit only that disposable copy: semantic search must refuse stale state, and reindexing must restore it. Never mutate live notes merely to exercise a failure.
+
+Record runtime-ready, desktop verification and client verification separately. Direct stdio tests do not prove the chosen agent is connected. Full onboarding requires the desktop and chosen-client checks; pending checks stay explicit. Open the vault root as the agent project so its local instructions apply; this does not itself register MCP or install skills.
+
+Daily: capture to Raw, review/promote/archive, update the Wiki index, then reindex. Weekly: review pending captures and status, and verify an authorized private backup. No automatic capture writer, watcher, scheduler, cloud sync or paid service is installed by this guide.
