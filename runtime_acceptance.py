@@ -20,6 +20,16 @@ def payload(result):
     return json.loads(result.content[0].text)
 
 
+def reuse_models(app):
+    source = Retrieval()
+    cache = source.state/'models'
+    if cache.is_dir():
+        # Validate and lock the source as well as the destination. Never
+        # dereference a cached link into an unrelated file or directory.
+        with source.state_guard(), app.state_guard():
+            shutil.copytree(cache, app.state/'models', symlinks=True)
+
+
 async def through_mcp(app, config):
     transport = StdioTransport(command=sys.executable,
                               args=[str(BASE/'ox_retrieval.py'), 'serve', '--config', str(config)])
@@ -76,10 +86,7 @@ def run():
         (root/'notes/private/hidden.md').write_text('EXCLUDED-SYN-993', encoding='utf-8')
         app = Retrieval(root, state)
         # Reuse only this repository's public model artifacts when available.
-        cache = BASE/'.state-secure'/'models'
-        if cache.is_dir():
-            with app.state_guard():
-                shutil.copytree(cache, state/'models')
+        reuse_models(app)
         before = app.inventory()
         indexed = app.index()
         assert indexed['fresh'] and indexed['completeness']['documents'] == 61

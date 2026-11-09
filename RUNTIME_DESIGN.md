@@ -41,7 +41,7 @@ Verified on Windows with Python 3.12 and the locked dependency environment. Thes
 | Check | Result |
 |---|---|
 | `uv sync --frozen --offline` | Exit 0; 161 installed packages checked; no dependency version upgrades |
-| `python -m unittest test_pathlen test_retrieval test_deployment test_runtime` | Exit 0; 44 tests run, one skipped because symlink privilege was unavailable |
+| `python -m unittest test_pathlen test_retrieval test_deployment test_runtime` | Exit 0; 45 tests run, one skipped because symlink privilege was unavailable |
 | `python test_protocol.py` | Exit 0; four-tool stdio discovery and exact search |
 | `python runtime_acceptance.py` | Exit 0; real backend and MCP exact/semantic/read/status, 60 distractors, exclusions, corrupt receipt, missing vector and unchanged source hashes |
 | Create the ignored `.state` test parent, then `python acceptance.py` | Exit 0; existing modification/rename/deletion and stale-index acceptance |
@@ -50,3 +50,5 @@ Verified on Windows with Python 3.12 and the locked dependency environment. Thes
 | Independent Rafter code review | No remaining release-blocking issue after fixes and re-review |
 
 Remote security analysis is a separate required pre-merge gate on the pushed candidate; its final result belongs in the associated pull request/release. No remote scan result is asserted by this local-validation table. Full client enrollment, another machine, non-Windows support, model-download authenticity and general performance gains are not established here.
+
+The remote Fast run completed with exit 0 on the production-runtime candidate. It reported one model-cache-copy warning in the executable test harness and five informational notes. The follow-up harness fix validates/locks the cache source, preserves links rather than dereferencing them, and has an actual Windows junction regression. It received local review and acceptance checks; the remote scan was not repeated under the one-scan-per-branch policy. Production runtime code is unchanged from the scanned candidate. Two notes concern best-effort cleanup that always propagates a fixed failure; three concern existing test-only partial executable paths.

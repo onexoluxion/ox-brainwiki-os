@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import sqlite3
 import struct
+import subprocess
 import sys
 import tempfile
 import time
@@ -13,6 +14,7 @@ import unittest
 from unittest.mock import patch
 
 import sqlite_vec
+import win32api
 from index_health import EMBEDDING_IDENTITY, inspect_index
 from ox_retrieval import Retrieval, RuntimeFailure, client_tool
 from runtime_receipt import MAX_RECEIPT_BYTES, SCHEMA, read_receipt, write_receipt
@@ -231,6 +233,30 @@ class Completeness(unittest.TestCase):
 
 
 class SearchAndErrors(unittest.TestCase):
+    def test_cached_model_junction_is_rejected_before_copy(self):
+        from runtime_acceptance import reuse_models
+        with tempfile.TemporaryDirectory() as tmp:
+            source = make_app(Path(tmp)/'cache-owner')
+            target_root = Path(tmp)/'target'/'source'
+            (target_root/'notes').mkdir(parents=True)
+            target = Retrieval(target_root, Path(tmp)/'target'/'state')
+            outside = Path(tmp)/'unrelated'
+            outside.mkdir()
+            sentinel = outside/'sentinel.txt'
+            sentinel.write_text('synthetic unrelated content')
+            link = source.state/'models'/'redirected'
+            command = str(Path(win32api.GetSystemDirectory())/'cmd.exe')
+            subprocess.run([command,'/c','mklink','/J',str(link),str(outside)],
+                           check=True, capture_output=True)
+            try:
+                with patch('runtime_acceptance.Retrieval', return_value=source):
+                    with self.assertRaises(ValueError):
+                        reuse_models(target)
+                self.assertFalse(target.state.exists())
+                self.assertEqual(sentinel.read_text(), 'synthetic unrelated content')
+            finally:
+                link.rmdir()
+
     def test_client_boundary_never_exposes_state_exceptions(self):
         with tempfile.TemporaryDirectory() as tmp:
             app = make_app(tmp)
