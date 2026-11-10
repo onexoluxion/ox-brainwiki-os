@@ -26,6 +26,8 @@ Release gates: cabinet templates and synthetic routing acceptance, reviewed port
 
 ## Evidence and acceptance
 
+[November 9 clean-vault acceptance](ONBOARDING_VALIDATION.md#full-onboarding-acceptance--2026-11-09) verified Obsidian desktop navigation and actual Codex/Claude retrieval. Both agent runs exited 0; final index/status were fresh and complete. The test also confirmed stale-state refusal after Obsidian normalized line endings, followed by successful reindex recovery. Finish desktop saves before final indexing. These are dated results for one tested setup, not a fresh-machine or persistent-registration claim.
+
 Keep a dated receipt for the exact version and destination being checked. Record the command or tool, exit code or error, inputs covered, observed result and remaining gaps. A process running or a connector reporting Connected establishes availability only. Read the complete result before claiming success: a failed batch can leave valid partial work, and a successful local change can still be absent from another client or destination.
 
 | Claim | Evidence required |

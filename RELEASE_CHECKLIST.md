@@ -1,6 +1,23 @@
 # Release checklist
 
-> Historical v0.1 candidate evidence follows. It does not certify a later commit or the current user's installation; use the operator steps below for a new candidate.
+## Current onboarding acceptance — 2026-11-09
+
+Verified source: `1a7d3b07c2eea2d2a12f8294f2ed8860440ec709`, runtime v0.3.0. [Full results and limits](ONBOARDING_VALIDATION.md#full-onboarding-acceptance--2026-11-09).
+
+- [x] Clean fictional vault: seven folders, identity, first cabinet and resolved local links.
+- [x] Obsidian desktop: root opened, Raw note created, Wiki index and archive citation navigation verified.
+- [x] Reviewed capture: promotion/index link and byte-identical source archive; pending Raw captures excluded.
+- [x] Final index/status: exit 0, fresh and complete; source hashes unchanged by retrieval.
+- [x] Codex CLI: exit 0, eight actual MCP calls covering exact/semantic/list/read/status and Raw exclusions.
+- [x] Claude Code: exit 0, ten actual MCP calls covering the same checks plus Archive/Identity denials.
+- [x] Rerun and privacy checks: existing files/settings preserved, fictional content only, local secrets scans exit 0 with zero findings.
+- [ ] Fresh-machine installation and persistent registrations on each intended client: separate acceptance remains required.
+
+This is a documentation evidence update, not a runtime release or a new tag. For each future candidate, repeat affected checks against its exact commit and record gaps. Finish Obsidian edits before final indexing; if saved bytes change, reindex before agent acceptance.
+
+## Historical v0.1 candidate evidence
+
+> The dated evidence below remains unchanged. It does not certify a later commit or the current user's installation; use the operator steps below for a new candidate.
 
 For the current Obsidian/Wiki onboarding procedure, see [the maintained guide](skills/onboard/SKILL.md) and [the November 9 validation receipt](ONBOARDING_VALIDATION.md). The historical onboarding proofs below used an older layout and are not acceptance for the current guide.
 

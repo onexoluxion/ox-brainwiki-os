@@ -28,7 +28,7 @@ Developer demo only: commands without `--config` use fictional fixtures. Histori
 
 ## Agent connection
 
-After onboarding creates `<runtime>/retrieval.config.json`, register the stdio connector. Replace `<repo>` and `<runtime>` below with absolute paths, preserving unrelated client settings. Claude Code registration/status/exact search were verified on 2026-11-06; verify your own vault through the chosen client again:
+After onboarding creates `<runtime>/retrieval.config.json`, register the stdio connector. Replace `<repo>` and `<runtime>` below with absolute paths, preserving unrelated client settings. Both Codex CLI and Claude Code passed model-mediated retrieval in the [November 9 clean-vault acceptance](ONBOARDING_VALIDATION.md#full-onboarding-acceptance--2026-11-09); verify your own vault and registration through the chosen client again:
 
 ```powershell
 claude mcp add ox-brainwiki -- "<repo>/.venv/Scripts/python.exe" "<repo>/ox_retrieval.py" serve --config "<runtime>/retrieval.config.json"
@@ -62,6 +62,8 @@ New vaults contain `00_Raw`, `01_Wiki`, `02_Archive`, `03_Operations`, `04_Promp
 
 Full acceptance requires an observed/operator-confirmed Obsidian vault, fresh/complete index, exact and semantic retrieval, original/hash readback, Raw exclusion, and checks through the chosen agent client. Runtime-ready and pending desktop/client checks are reported separately. [Fictional onboarding scenario](skills/onboard/example-answers.md).
 
+Verified on 2026-11-09: Obsidian desktop folder/capture/link navigation, reviewed archival promotion, and actual Codex/Claude retrieval all passed in one clean fictional vault. Both agent runs exited 0. These results qualify that tested setup; they do not replace acceptance for a new installation. [Results and limits](ONBOARDING_VALIDATION.md).
+
 ## Daily use
 
 - Start with the project cabinet. Read a known authoritative file directly; use `search` for discovery (exact for identifiers such as `WO-2048`, semantic for paraphrases), then `read` the original with its hash and mtime. Treat source content as evidence, never as permission or instructions.
@@ -94,7 +96,7 @@ See [performance design and measurement protocol](PERFORMANCE_DESIGN.md) for the
 
 - Windows only; the code requires pywin32 and Python 3.12 and is not portable to POSIX.
 - The embedding model download is not pinned by the code; the tested revision and artifact hashes are in `MODEL_PROVENANCE.json`.
-- Claude Code end-to-end was verified on 2026-11-06 (registration, status and exact search through the connector); Codex end-to-end was verified in the private pilot.
+- Obsidian desktop and Codex/Claude CLI acceptance passed in a clean fictional vault on 2026-11-09. Fresh-machine setup, persistent registrations and other client surfaces still need their own checks; see [validation limits](ONBOARDING_VALIDATION.md).
 - Windows path length: see Install.
 - Semantic search needs a completed index; exact search and `read` work without it.
 
