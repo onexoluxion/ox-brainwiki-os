@@ -92,6 +92,8 @@ Run from `<repo>` with the selected configuration:
 
 Require exit 0, `fresh: true` and complete coverage. Compare source hashes before/after to prove indexing did not edit notes. Initial model download requires network; inference is local. Content returned to an AI client follows that client's model/data settings. Commands without `--config` use bundled developer fixtures and do not verify the user's installation.
 
+Finish opening/saving the promoted note and index in Obsidian before this final index. Obsidian may normalize line endings, which changes source hashes even when the text looks identical. If bytes change after indexing, reindex and repeat client acceptance. An authentication failure belongs to the chosen client's sign-in/endpoint configuration; resolve it through that client's normal authentication flow, keeping credentials out of the vault and receipts.
+
 Register the absolute server and external config paths in the chosen agent using [Agent connection](../../README.md#agent-connection). Preserve unrelated client configuration. Then verify through that actual client:
 
 1. Exactly four read-only tools: `search`, `read`, `list`, `status`.
@@ -102,5 +104,7 @@ Register the absolute server and external config paths in the chosen agent using
 Use fictional acceptance data only in an explicitly disposable synthetic vault/copy; an operator-selected new production vault still needs real operator-supplied knowledge. If checking stale-index behavior, edit only that disposable copy: semantic search must refuse stale state, and reindexing must restore it. Never mutate live notes merely to exercise a failure.
 
 Record runtime-ready, desktop verification and client verification separately. Direct stdio tests do not prove the chosen agent is connected. Full onboarding requires the desktop and chosen-client checks; pending checks stay explicit. Open the vault root as the agent project so its local instructions apply; this does not itself register MCP or install skills.
+
+[Clean-vault acceptance on 2026-11-09](../../ONBOARDING_VALIDATION.md#full-onboarding-acceptance--2026-11-09) verified this flow with Obsidian and actual Codex/Claude CLI tool calls. Treat that as dated evidence for its source commit and tested setup, not a completed check for the current installation.
 
 Daily: capture to Raw, review/promote/archive, update the Wiki index, then reindex. Weekly: review pending captures and status, and verify an authorized private backup. No automatic capture writer, watcher, scheduler, cloud sync or paid service is installed by this guide.
