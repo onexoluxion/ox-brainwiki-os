@@ -141,24 +141,20 @@ def wait_for_backend(proc, timeout, exceeded):
         try:
             queue.control([event], 0, 0)
         except ProcessLookupError:
-            return True  # The child exited before it could be registered.
+            return  # The child exited before it could be registered.
         while not exceeded.is_set():
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise subprocess.TimeoutExpired(proc.args, timeout)
             if queue.control(None, 1, min(0.05, remaining)):
-                return True
-    return False
+                return
 
 
-def stop_backend(proc, exited):
+def stop_backend(proc):
     try:
         os.killpg(proc.pid, signal.SIGKILL)
-    except ProcessLookupError:
+    except (ProcessLookupError, PermissionError):
+        # Darwin may return EPERM for a group containing only its zombie
+        # leader. A still-running leader will fail the bounded wait below.
         pass
-    except PermissionError:
-        # Darwin returns EPERM for a group containing only its zombie leader.
-        if not exited:
-            raise
-    finally:
-        proc.wait(timeout=5)
+    proc.wait(timeout=5)

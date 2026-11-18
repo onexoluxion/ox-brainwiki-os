@@ -417,10 +417,9 @@ class Retrieval:
         worker.start()
         failure = None
         cleanup_failed = False
-        exited = False
         try:
             if job is None:
-                exited = macos_guard.wait_for_backend(proc, self.backend_timeout, exceeded)
+                macos_guard.wait_for_backend(proc, self.backend_timeout, exceeded)
             else:
                 proc.wait(timeout=self.backend_timeout)
         except subprocess.TimeoutExpired:
@@ -436,7 +435,7 @@ class Retrieval:
                     cleanup_failed = True
             try:
                 if job is None:
-                    macos_guard.stop_backend(proc, exited)
+                    macos_guard.stop_backend(proc)
                 else:
                     job.Close()
             except Exception:
