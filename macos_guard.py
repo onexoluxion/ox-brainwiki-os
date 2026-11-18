@@ -1,5 +1,5 @@
 """Local account isolation for the native macOS runtime."""
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 import ctypes
 import errno
 import fcntl
@@ -134,7 +134,7 @@ def paths_overlap(root, state):
 def wait_for_backend(proc, timeout, exceeded):
     """Observe the exit before reaping so the process group ID cannot be reused."""
     deadline = time.monotonic() + timeout
-    with select.kqueue() as queue:
+    with closing(select.kqueue()) as queue:
         event = select.kevent(proc.pid, filter=select.KQ_FILTER_PROC,
                              flags=select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
                              fflags=select.KQ_NOTE_EXIT)
