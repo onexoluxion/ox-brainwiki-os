@@ -72,7 +72,7 @@ async def through_mcp(app, config):
 def run():
     started = time.monotonic()
     with tempfile.TemporaryDirectory(prefix='ox-runtime-') as temporary:
-        parent = Path(temporary)
+        parent = Path(temporary).resolve()
         root, state = parent/'source', parent/'state'
         for directory in ('notes/target', 'notes/other', 'notes/private'):
             (root/directory).mkdir(parents=True)

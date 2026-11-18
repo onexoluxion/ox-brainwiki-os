@@ -3,10 +3,16 @@ from contextlib import contextmanager
 from pathlib import Path
 import threading
 import functools
-import win32api, win32con, win32file, win32security, pywintypes
+import os
+import sys
 
-SID = win32security.GetTokenInformation(win32security.OpenProcessToken(win32api.GetCurrentProcess(), win32con.TOKEN_QUERY), win32security.TokenUser)[0]
-TRUSTED = {win32security.ConvertSidToStringSid(SID), 'S-1-5-18', 'S-1-5-32-544'}
+if os.name == 'nt':
+    import win32api, win32con, win32file, win32security, pywintypes
+
+    SID = win32security.GetTokenInformation(win32security.OpenProcessToken(win32api.GetCurrentProcess(), win32con.TOKEN_QUERY), win32security.TokenUser)[0]
+    TRUSTED = {win32security.ConvertSidToStringSid(SID), 'S-1-5-18', 'S-1-5-32-544'}
+elif sys.platform == 'darwin':
+    from macos_guard import locked_state
 
 def validate_acl(path):
     sd=win32security.GetFileSecurity(str(path),win32security.OWNER_SECURITY_INFORMATION|win32security.DACL_SECURITY_INFORMATION)
@@ -36,10 +42,8 @@ def guarded(method):
     return call
 
 @contextmanager
-def state_guard(app):
+def windows_state(app):
     from ox_retrieval import pinned_directories
-    if getattr(app._guard_local,'depth',0):
-        yield;return
     # Parent is operator-selected and must already exist: never create arbitrary ancestor trees.
     with pinned_directories(app.state.parent):
         if not app.state.exists():create_private(app.state)
@@ -53,8 +57,20 @@ def state_guard(app):
             lock=app.state/'operation.lock'
             handle=win32file.CreateFile(str(lock),win32con.GENERIC_READ|win32con.GENERIC_WRITE,0,None,win32con.OPEN_ALWAYS,win32con.FILE_ATTRIBUTE_NORMAL|0x00200000,None)
             try:
-                app._guard_local.depth=1
                 yield
             finally:
-                app._guard_local.depth=0
                 handle.Close()
+
+
+@contextmanager
+def state_guard(app):
+    if getattr(app._guard_local, 'depth', 0):
+        yield
+        return
+    guard = windows_state(app) if os.name == 'nt' else locked_state(app.state)
+    with guard:
+        app._guard_local.depth = 1
+        try:
+            yield
+        finally:
+            app._guard_local.depth = 0
