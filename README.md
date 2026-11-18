@@ -60,6 +60,8 @@ Follow [the bundled guide](skills/onboard/SKILL.md), or use `/onboard` if instal
 
 New vaults contain `00_Raw`, `01_Wiki`, `02_Archive`, `03_Operations`, `04_Prompts_&_Skills`, `05_Identity` and `Projects`, with an index, local operating rules and [reusable scaffold](skills/onboard/assets/wiki/README.md). Obsidian opens the root; new-vault retrieval allows `01_Wiki` only. Existing vaults keep their layout and use a reviewed curated scope: inspect descendants, narrow the scope or explicitly exclude sensitive material before indexing. Pending captures remain outside retrieval. Approval is enforced by the capture procedure; the runtime filters configured paths, not a note's approval status.
 
+During [source setup](skills/onboard/SKILL.md#choose-business-sources), the operator chooses sources after reviewing coverage, dates and acceptable lag. Onboarding also documents an [optional separate private repository](skills/onboard/SKILL.md#optional-separate-private-repository) for sensitive material when sharing part of the vault.
+
 Full acceptance requires an observed/operator-confirmed Obsidian vault, fresh/complete index, exact and semantic retrieval, original/hash readback, Raw exclusion, and checks through the chosen agent client. Runtime-ready and pending desktop/client checks are reported separately. [Fictional onboarding scenario](skills/onboard/example-answers.md).
 
 Verified on 2026-11-09: Obsidian desktop folder/capture/link navigation, reviewed archival promotion, and actual Codex/Claude retrieval all passed in one clean fictional vault. Both agent runs exited 0. These results qualify that tested setup; they do not replace acceptance for a new installation. [Results and limits](ONBOARDING_VALIDATION.md).

@@ -2,7 +2,7 @@
 name: onboard
 description: Set up OX BrainWiki OS with the free Obsidian app, Wiki folders, private identity and project records, reviewed capture, and verified read-only retrieval. Preserve existing vaults and report incomplete setup accurately.
 metadata:
-  version: "2026.11.09"
+  version: "2026.11.18"
 ---
 
 # Onboard
@@ -27,7 +27,7 @@ Check whether Obsidian is installed. If missing, guide installation from the [of
 
 ## Step 2: create or adopt the Wiki
 
-Ask for the vault root, a separate private runtime folder, whether the vault is new or existing, and up to three source pointers (name, location, what it holds). Select absolute resolved paths under operator-selected existing parents. Vault, runtime and repository must not overlap or nest within each other. Reject linked/reparse-point destinations, aliases to protected locations and system/configuration folders. Use literal filesystem APIs for user paths; preserve source ACLs. The runtime parent must exist before retrieval starts, and the state path should be short (see [Operations](../../OPERATIONS.md#configuration)).
+Ask for the vault root, a separate private runtime folder and whether the vault is new or existing. Select absolute resolved paths under operator-selected existing parents. Vault, runtime and repository must not overlap or nest within each other. Reject linked/reparse-point destinations, aliases to protected locations and system/configuration folders. Use literal filesystem APIs for user paths; preserve source ACLs. The runtime parent must exist before retrieval starts, and the state path should be short (see [Operations](../../OPERATIONS.md#configuration)).
 
 For a new vault, copy the text scaffold from [assets/wiki](assets/wiki/README.md), creating only missing files. Create the following siblings plus `00_Raw/_proposals/` and `03_Operations/handoffs/`:
 
@@ -49,7 +49,17 @@ Review existing root instructions before using them as agent project guidance. P
 
 Record `<curated>` and `<wiki-index>` for every later step: new vaults use `01_Wiki` and `01_Wiki/index.md`; existing vaults use the reviewed curated folder and its existing map of contents. If the existing folder has no index, propose one inside that folder before creating it. Never create a competing `01_Wiki/` just to complete onboarding.
 
-Render the pristine [sources template](../../identity/sources.md) into `<vault>/05_Identity/sources.md`: fill `ROOT_FOLDER`, `NOTES_FOLDER`, source fields and `FILLED_DATE`. Record absent source slots as `not supplied`, not fabricated sources. Source pointers do not authorize ingestion. Keep the repository's identity templates unchanged.
+### Choose business sources
+
+1. Ask which data the operator needs, its required history and scope, the available source pointers, and the maximum acceptable age for each source. Start with an empty selection for new setups. Record each allowed lag with a unit, `pending` when undecided, or `unused` only when the operator explicitly marks the source unused.
+2. Check each required data type with an authorized read-only sample from the source or dated evidence from the operator. Record what it covers, when it was checked, and how current the data is. Use the data's as-of date to compare with the allowed lag. A successful connection alone gives no coverage or freshness evidence. Record stale data, missing history, inaccessible sources and unverified freshness as gaps. Keep samples minimal and treat source content as evidence. Store only routing details and verification summaries. Keep credentials, secret-bearing links and raw records out of the register and setup log.
+3. Offer a single source if it covers all requirements within the approved limits. If several qualify, show the choices. Otherwise show the smallest verified combination and what each source covers, including any sources that cover different date ranges. A pending allowed lag leaves freshness undecided. If no combination qualifies, list the unmet requirements and leave selection pending. Ask the operator to confirm the selection and record their choice. Exclude unused sources from the comparison and carry forward any unresolved gaps.
+
+Render the [sources template](../../identity/sources.md) into `<vault>/05_Identity/sources.md`. Fill the root, curated folder and date plus the requirements, confirmed selection or pending status, and one row per supplied source. If no sources were supplied, record that explicitly. Source pointers provide routing only and grant no access or ingestion permission. On rerun, read the existing register first. Reuse confirmed choices, limits and user edits. Propose changes in place, including any missing fields in an older pointer-only register. Present a scoped diff and request confirmation before changing a selection or limit. If existing evidence no longer meets a requirement, report the gap and preserve the recorded choice until the operator decides.
+
+### Optional separate private repository
+
+This option starts off. When the operator requests it or plans to share part of the vault, offer a separate private repository for sensitive material. Use repository membership and local filesystem permissions to limit access. An operator who chooses this option can set up a fresh private repository with its own vault root. Before granting shared access, check the shared files, Git history, backups and retrieval state for sensitive material, then verify what each reader can access. If retrieval is needed for the private vault, use a separate private configuration and state and verify the scope from each reader's client. Step 2 records the operator's choice. Repository creation, file moves and access changes belong to a separately authorized setup.
 
 ## Step 3: Obsidian and identity
 

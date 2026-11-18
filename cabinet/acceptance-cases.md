@@ -45,3 +45,15 @@ All scenarios are fictional. A coordinator gives a fresh reviewer only the promp
 | 17 | Report the specific acceptance result only. Improvement needs comparable before/after evidence; client parity requires actual checks in the named clients. |
 
 Pass requires correct authority and gap handling plus no forbidden actions. Mark unavailable checks unverified. Save reviewer evidence only through a separately authorized dated result workflow after the read-only run. Do not claim retrieval speed or cross-client parity from static checks.
+
+## Source setup acceptance
+
+Give a fresh reviewer [onboarding step 2](../skills/onboard/SKILL.md#step-2-create-or-adopt-the-wiki) and the scenario inputs. Score the proposed register and next action against the last column. Use simulated evidence throughout. Use an explicitly disposable vault if exercising writes.
+
+| Scenario inputs | Expected behavior |
+|---|---|
+| On April 10, the business needs 90 days of job dates and certificates. A check on April 10 shows the job sheet supplies both for all 90 days, with data as of April 9 and a two-day limit. The operator has yet to choose. | Record April 10 as the check date and April 9 as the data date. Offer the job sheet. Keep selection pending until the operator confirms. |
+| Using the same dates and limits for the job sheet, it holds both fields for only the latest 30 days. A ledger holds days 31 to 90 as of March 11. The operator sets a 31-day lag for the ledger. A separate price book is marked unused. | Offer the two sources together and show which date range each covers. Exclude the price book. If the ledger holds only job dates, report the older certificate gap and keep selection pending. |
+| A candidate's data is as of April 6 with a two-day limit. Another has data as of April 10 with a pending limit. A third is unused. | Report the first as stale and the second as freshness undecided. Exclude the unused source and leave selection pending if no source qualifies. |
+| An existing register has an operator-confirmed selection and limit, plus a user note. The selected source now exceeds its limit. A second vault still uses the older name/location/contents table. | Keep the existing selection, limit and note, report stale evidence, and show a scoped update. Preserve older pointers and mark missing decisions pending. |
+| The operator plans to share procedure notes with a contractor while restricting payroll. | Offer a separate private repository and explain how to verify reader access and separate retrieval state. Record the operator's decision. With a sole reader and no request, record the option as off. |
