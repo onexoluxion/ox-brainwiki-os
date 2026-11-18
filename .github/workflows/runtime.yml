@@ -34,6 +34,10 @@ jobs:
         run: |
           test "$(uname -m)" = arm64
           printf 'TMPDIR=%s\n' "$(cd "$RUNNER_TEMP" && pwd -P)" >> "$GITHUB_ENV"
+      - name: Use the Windows runner's long-form temporary path
+        if: runner.os == 'Windows'
+        shell: bash
+        run: printf 'TMPDIR=%s\n' "$(cygpath -am "$RUNNER_TEMP")" >> "$GITHUB_ENV"
       - name: Regressions and real retrieval
         shell: bash
         run: |
