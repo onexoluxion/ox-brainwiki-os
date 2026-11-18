@@ -16,10 +16,12 @@ Why this field exists: new vaults use `01_Wiki`; existing vaults keep their sele
 
 ## Other sources (pointers)
 
-| Source | Where it lives | What it holds |
-|---|---|---|
-| {{SOURCE_1_NAME}} | {{SOURCE_1_LOCATION}} | {{SOURCE_1_HOLDS}} |
-| {{SOURCE_2_NAME}} | {{SOURCE_2_LOCATION}} | {{SOURCE_2_HOLDS}} |
-| {{SOURCE_3_NAME}} | {{SOURCE_3_LOCATION}} | {{SOURCE_3_HOLDS}} |
+Required data, scope and history — {{REQUIRED_DATA}}
 
-Why this field exists: the cabinet routes tasks to the authoritative source, and most authoritative sources are not Markdown notes; a pointer tells the agent where to send the operator without pretending to hold the data.
+Operator-confirmed selection and coverage by source — {{SELECTED_SOURCES}}
+
+| Source | Where it lives | Verified coverage | Checked on and data as of | Allowed lag | Gaps |
+|---|---|---|---|---|---|
+| {{SOURCE_NAME}} | {{SOURCE_LOCATION}} | {{SOURCE_COVERAGE}} | {{SOURCE_EVIDENCE}} | {{SOURCE_ALLOWED_LAG}} | {{SOURCE_GAPS}} |
+
+Separate private repository — {{PRIVATE_REPOSITORY_CHOICE}}

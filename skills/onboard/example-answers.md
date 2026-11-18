@@ -14,6 +14,9 @@ Check the runtime prerequisites and Obsidian separately. If desktop UI or the ch
   1. `Quality manual` | `shared drive, folder QMS/current` | `the lab's accreditation procedures and calibration method sheets`
   2. `Job ticket sheet` | `spreadsheet jobs-2026.xlsx on the lab PC` | `every calibration job, its certificate number, due date and technician`
   3. `Distributor price book` | `PDF sent quarterly by the two distributors` | `contract prices and renewal terms per distributor`
+- Required for this source selection: current job due dates and certificate numbers for both distributor regions, including jobs from the last 90 days.
+- Simulated read-only evidence: the job ticket sheet covers both fields in both regions for the entire period, with data current yesterday. The operator sets a two-day limit. The manual has a pending lag and the operator marks the price book unused for this setup.
+- Expected: offer the job ticket sheet and wait for confirmation. For this exercise, the operator then confirms it. Record coverage and dates in the private source register. The separate private repository option is off because this exercise has one reader.
 
 ## Step 3: Obsidian and identity
 
