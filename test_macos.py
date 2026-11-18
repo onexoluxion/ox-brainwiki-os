@@ -91,3 +91,11 @@ class MacBoundaries(unittest.TestCase):
                 'print("done", flush=True)')
         self.app.backend_timeout = 3
         self.assertEqual(self.app.backend('-c', code).strip(), 'done')
+
+    def test_backend_inherits_the_state_lock(self):
+        self.app.exe = Path(sys.executable)
+        with self.app.state_guard():
+            fd = self.app._guard_local.lock
+            code = 'import os, sys; print(os.fstat(int(sys.argv[1])).st_ino)'
+            inode = self.app.backend('-c', code, str(fd)).strip()
+            self.assertEqual(inode, str((self.state / 'operation.lock').stat().st_ino))

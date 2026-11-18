@@ -68,9 +68,11 @@ def state_guard(app):
         yield
         return
     guard = windows_state(app) if os.name == 'nt' else locked_state(app.state)
-    with guard:
+    with guard as lock:
         app._guard_local.depth = 1
+        app._guard_local.lock = lock
         try:
             yield
         finally:
             app._guard_local.depth = 0
+            app._guard_local.lock = None

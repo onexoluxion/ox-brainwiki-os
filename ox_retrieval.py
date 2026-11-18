@@ -374,13 +374,15 @@ class Retrieval:
         try:
             for name in ('temp','profile/roaming','profile/local'):
                 (self.state/name).mkdir(parents=True,exist_ok=True)
-            options = {'start_new_session': True}
             if os.name == 'nt':
                 job = win32job.CreateJobObject(None, "")
                 limits = win32job.QueryInformationJobObject(job, win32job.JobObjectExtendedLimitInformation)
                 limits['BasicLimitInformation']['LimitFlags'] = win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
                 win32job.SetInformationJobObject(job, win32job.JobObjectExtendedLimitInformation, limits)
                 options = {'creationflags': subprocess.CREATE_NO_WINDOW}
+            else:
+                # Keep state locked if the connector is force-killed during indexing.
+                options = {'start_new_session': True, 'pass_fds': (self._guard_local.lock,)}
             proc = subprocess.Popen([str(self.exe), *args], env=self.env(), stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, **options)
             if job is not None:

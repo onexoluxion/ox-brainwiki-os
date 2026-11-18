@@ -110,7 +110,7 @@ def locked_state(path):
                             or not (stat.S_ISDIR(info.st_mode)
                                     or (stat.S_ISREG(info.st_mode) and info.st_nlink == 1))):
                         raise ValueError('linked or untrusted state entry')
-                yield
+                yield lock
 
 
 def verify_source(fd):
