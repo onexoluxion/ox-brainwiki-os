@@ -359,9 +359,10 @@ class Retrieval:
                    'HOME':profile, 'TMPDIR':temporary,
                    'XDG_CACHE_HOME':str(self.state/'profile'/'cache'),
                    'XDG_CONFIG_HOME':str(self.state/'profile'/'config'),
-                   'XDG_DATA_HOME':str(self.state/'profile'/'data'),
-                   'HF_HUB_DISABLE_SYMLINKS':'1'}
-        env.update(BASIC_MEMORY_CONFIG_DIR=str(self.state/'bm'), BASIC_MEMORY_HOME=str(self.state/'staging'), BASIC_MEMORY_FORCE_LOCAL='true', HF_HOME=str(self.state/'hf'), FASTEMBED_CACHE_PATH=str(self.state/'models'), HF_HUB_DISABLE_TELEMETRY='1')
+                   'XDG_DATA_HOME':str(self.state/'profile'/'data')}
+        # State accepts ordinary cache files on both platforms, including
+        # Windows installations where model downloads can create symlinks.
+        env.update(BASIC_MEMORY_CONFIG_DIR=str(self.state/'bm'), BASIC_MEMORY_HOME=str(self.state/'staging'), BASIC_MEMORY_FORCE_LOCAL='true', HF_HOME=str(self.state/'hf'), FASTEMBED_CACHE_PATH=str(self.state/'models'), HF_HUB_DISABLE_TELEMETRY='1', HF_HUB_DISABLE_SYMLINKS='1')
         return env
 
     @guarded

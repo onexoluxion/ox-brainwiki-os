@@ -81,6 +81,7 @@ class Hardening(unittest.TestCase):
             env = Retrieval().env()
             for key in ('BASIC_MEMORY_DATABASE_URL','HF_ENDPOINT','PYTHONPATH'):
                 self.assertNotIn(key, env)
+            self.assertEqual(env['HF_HUB_DISABLE_SYMLINKS'], '1')
 
 class Configuration(unittest.TestCase):
     def test_schema_and_relative_paths(self):
