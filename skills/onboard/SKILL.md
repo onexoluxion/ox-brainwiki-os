@@ -2,7 +2,7 @@
 name: onboard
 description: Set up OX BrainWiki OS with the free Obsidian app, Wiki folders, private identity and project records, reviewed capture, and verified read-only retrieval. Preserve existing vaults and report incomplete setup accurately.
 metadata:
-  version: "2026.11.18"
+  version: "2026.11.18.1"
 ---
 
 # Onboard
@@ -21,7 +21,7 @@ Use the operating system date. Record each step as `done`, `pending`, `skipped` 
 
 ## Step 1: requirements
 
-Check Windows, `uv --version`, `uv python find 3.12`, `git --version`, and the chosen agent CLI or desktop client. Record versions and exit codes. Run `uv sync --frozen --python 3.12` from `<repo>` when installation is authorized. This release requires Windows and Python 3.12.
+Check Windows or an Apple silicon Mac with macOS 15 or later, then check `uv --version`, `git --version`, and the chosen agent CLI or desktop client. Record versions and exit codes. Run `uv sync --frozen --python 3.12` from `<repo>` when installation is authorized, adding `--managed-python` on Mac.
 
 Check whether Obsidian is installed. If missing, guide installation from the [official download](https://obsidian.md/download), using its normal installer when authorized. The [base app is free for personal and commercial use](https://obsidian.md/license); no account, Sync, Publish or community plugins are required. Obsidian is separately licensed and installed; its binary is not bundled here. Do not run remote installation scripts. An installed executable alone does not prove the vault opened; that is step 3. Missing requirements remain pending.
 
@@ -93,7 +93,7 @@ Only `root`, `state`, `allow` and `exclude` are accepted. Raw, proposals, Archiv
 
 When upgrading an early onboarding that stored answers/configuration in the clone, inspect those files privately and reuse the answers. Present a migration diff to the selected private Identity/runtime destinations; preserve originals until verification and separately authorized cleanup. Update the client to the external configuration, rebuild and verify with the new scope. Keep generated user content out of commits. This guide does not silently move an existing vault or rewrite its archive.
 
-Run from `<repo>` with the selected configuration:
+Run from `<repo>` with the selected configuration. On macOS, use `.venv/bin/python` in both commands and in the MCP client registration:
 
 ```powershell
 .venv/Scripts/python.exe ox_retrieval.py index --config "<runtime>/retrieval.config.json"

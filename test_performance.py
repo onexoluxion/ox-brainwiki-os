@@ -166,6 +166,7 @@ class PerformanceSafety(unittest.TestCase):
             app.root.rename(moved)
             moved.rename(app.root)
 
+    @unittest.skipUnless(runtime.os.name == 'nt', 'Windows directory pin check')
     def test_pin_failure_closes_handles_in_reverse_order(self):
         class API:
             def __init__(self):

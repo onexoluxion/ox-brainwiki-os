@@ -4,14 +4,18 @@ import hashlib
 import json
 import os
 from pathlib import Path, PureWindowsPath
+import platform
 import subprocess
 import sys
 import time
 import threading
 import ctypes
-import msvcrt
-import winreg
-import win32job
+if os.name == 'nt':
+    import msvcrt
+    import winreg
+    import win32job
+elif sys.platform == 'darwin':
+    import macos_guard
 from contextlib import contextmanager
 from importlib.metadata import version
 from importlib.metadata import PackageNotFoundError
@@ -139,6 +143,10 @@ def long_paths_enabled():
 @contextmanager
 def pinned_directories(path):
     """Pin each existing directory without following reparse points or sharing delete."""
+    if sys.platform == 'darwin':
+        with macos_guard.open_verified(path, macos_guard.DIRECTORY):
+            yield
+        return
     handles = []
     try:
         path = Path(path).absolute()
@@ -195,7 +203,8 @@ def load_config(filename):
 
 class Retrieval:
     def __init__(self, root=BASE / 'fixtures', state=BASE / '.state-secure', allowed=('notes',), excluded=('notes/private',)):
-        if os.name != 'nt': raise RuntimeError('this release supports Windows only')
+        if os.name != 'nt' and not (sys.platform == 'darwin' and platform.machine() == 'arm64'):
+            raise RuntimeError('this release supports Windows and Apple silicon Macs')
         self.root, self.state = Path(root).absolute(), Path(state).absolute()
         if os.name == 'nt':
             limit = WINDOWS_MAX_PATH - MODEL_PATH_SUFFIX
@@ -209,7 +218,11 @@ class Retrieval:
         self._guard_local = threading.local()
         self.backend_timeout = 300
         self.last_error = None
-        if self.state.is_relative_to(self.root) or self.root.is_relative_to(self.state):
+        root_key, state_key = self.root, self.state
+        if sys.platform == 'darwin':
+            root_key, state_key = (Path(macos_guard.path_key(path)) for path in (self.root, self.state))
+        if (state_key.is_relative_to(root_key) or root_key.is_relative_to(state_key)
+                or (sys.platform == 'darwin' and macos_guard.paths_overlap(self.root, self.state))):
             raise ValueError('state/source overlap')
         self.allowed = tuple(scope_prefix(p) for p in allowed)
         self.excluded = tuple(scope_prefix(p) for p in excluded)
@@ -228,8 +241,11 @@ class Retrieval:
             raise ValueError('path alias denied')
         if p.is_absolute() or PureWindowsPath(name).drive or '..' in p.parts:
             raise ValueError('path denied')
-        key = p.as_posix().casefold()
-        within = lambda prefix: key == prefix.casefold() or key.startswith(prefix.casefold() + '/')
+        path_key = macos_guard.path_key if sys.platform == 'darwin' else str.casefold
+        key = path_key(p.as_posix())
+        def within(prefix):
+            prefix = path_key(prefix)
+            return key == prefix or key.startswith(prefix + '/')
         if not any(within(a) for a in self.allowed) or any(within(e) for e in self.excluded):
             raise ValueError('path denied')
         current = self.root
@@ -245,11 +261,18 @@ class Retrieval:
 
     def read(self, path):
         p = self.path(path)
+        if sys.platform == 'darwin':
+            return self._read_pinned(path)
         with pinned_directories(p.parent):
             return self._read_pinned(path)
 
     def _read_pinned(self, path):
         p = self.path(path)
+        if sys.platform == 'darwin':
+            with macos_guard.open_verified(p, os.O_RDONLY | macos_guard.NO_LINKS) as fd:
+                macos_guard.verify_source(fd)
+                with os.fdopen(fd, 'rb', closefd=False) as stream:
+                    return self._source_content(stream, path)
         with p.open('rb') as f:
             # Validate the object actually opened, not a previous pathname lookup.
             buf = ctypes.create_unicode_buffer(32768)
@@ -264,8 +287,11 @@ class Retrieval:
             self.path(canonical)
             if canonical.casefold() != path.casefold():
                 raise ValueError('path alias denied')
-            data = f.read(MAX_BYTES + 1)
-            mtime = os.fstat(f.fileno()).st_mtime
+            return self._source_content(f, path)
+
+    def _source_content(self, stream, path):
+        data = stream.read(MAX_BYTES + 1)
+        mtime = os.fstat(stream.fileno()).st_mtime
         if len(data) > MAX_BYTES:
             raise ValueError('file too large')
         return {'path': path, 'content': data.decode('utf-8'), 'sha256': hashlib.sha256(data).hexdigest(), 'source_mtime': mtime, 'untrusted_content': True}
@@ -318,13 +344,25 @@ class Retrieval:
         return {'paths': sorted(names)[:limit], 'truncated': len(names) > limit}
 
     def env(self):
-        system = os.environ.get('SystemRoot', r'C:\Windows')
-        env = {'SystemRoot':system, 'WINDIR':system,
-               'PATH':os.pathsep.join((str(Path(sys.executable).parent), str(Path(system)/'System32'))),
-               'TEMP':str(self.state/'temp'), 'TMP':str(self.state/'temp'),
-               'USERPROFILE':str(self.state/'profile'), 'APPDATA':str(self.state/'profile'/'roaming'),
-               'LOCALAPPDATA':str(self.state/'profile'/'local')}
-        env.update(BASIC_MEMORY_CONFIG_DIR=str(self.state/'bm'), BASIC_MEMORY_HOME=str(self.state/'staging'), BASIC_MEMORY_FORCE_LOCAL='true', HF_HOME=str(self.state/'hf'), FASTEMBED_CACHE_PATH=str(self.state/'models'), HF_HUB_DISABLE_TELEMETRY='1')
+        executable_dir = str(Path(sys.executable).parent)
+        temporary = str(self.state/'temp')
+        profile = str(self.state/'profile')
+        if os.name == 'nt':
+            system = os.environ.get('SystemRoot', r'C:\Windows')
+            env = {'SystemRoot':system, 'WINDIR':system,
+                   'PATH':os.pathsep.join((executable_dir, str(Path(system)/'System32'))),
+                   'TEMP':temporary, 'TMP':temporary,
+                   'USERPROFILE':profile, 'APPDATA':str(self.state/'profile'/'roaming'),
+                   'LOCALAPPDATA':str(self.state/'profile'/'local')}
+        else:
+            env = {'PATH':os.pathsep.join((executable_dir, '/usr/bin', '/bin')),
+                   'HOME':profile, 'TMPDIR':temporary,
+                   'XDG_CACHE_HOME':str(self.state/'profile'/'cache'),
+                   'XDG_CONFIG_HOME':str(self.state/'profile'/'config'),
+                   'XDG_DATA_HOME':str(self.state/'profile'/'data')}
+        # State accepts ordinary cache files on both platforms, including
+        # Windows installations where model downloads can create symlinks.
+        env.update(BASIC_MEMORY_CONFIG_DIR=str(self.state/'bm'), BASIC_MEMORY_HOME=str(self.state/'staging'), BASIC_MEMORY_FORCE_LOCAL='true', HF_HOME=str(self.state/'hf'), FASTEMBED_CACHE_PATH=str(self.state/'models'), HF_HUB_DISABLE_TELEMETRY='1', HF_HUB_DISABLE_SYMLINKS='1')
         return env
 
     @guarded
@@ -337,13 +375,19 @@ class Retrieval:
         try:
             for name in ('temp','profile/roaming','profile/local'):
                 (self.state/name).mkdir(parents=True,exist_ok=True)
-            job = win32job.CreateJobObject(None, "")
-            limits = win32job.QueryInformationJobObject(job, win32job.JobObjectExtendedLimitInformation)
-            limits['BasicLimitInformation']['LimitFlags'] = win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-            win32job.SetInformationJobObject(job, win32job.JobObjectExtendedLimitInformation, limits)
+            if os.name == 'nt':
+                job = win32job.CreateJobObject(None, "")
+                limits = win32job.QueryInformationJobObject(job, win32job.JobObjectExtendedLimitInformation)
+                limits['BasicLimitInformation']['LimitFlags'] = win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+                win32job.SetInformationJobObject(job, win32job.JobObjectExtendedLimitInformation, limits)
+                options = {'creationflags': subprocess.CREATE_NO_WINDOW}
+            else:
+                # Keep state locked if the connector is force-killed during indexing.
+                options = {'start_new_session': True, 'pass_fds': (self._guard_local.lock,)}
             proc = subprocess.Popen([str(self.exe), *args], env=self.env(), stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW)
-            win32job.AssignProcessToJobObject(job, int(proc._handle))
+                                    stderr=subprocess.STDOUT, **options)
+            if job is not None:
+                win32job.AssignProcessToJobObject(job, int(proc._handle))
         except Exception:
             if proc is not None:
                 try:
@@ -366,7 +410,8 @@ class Retrieval:
                 while chunk := proc.stdout.read(8192):
                     if len(output) + len(chunk) > 4 * MAX_BYTES:
                         exceeded.set()
-                        proc.kill()
+                        if job is not None:
+                            proc.kill()
                         break
                     output.extend(chunk)
             except (OSError, ValueError):
@@ -376,20 +421,26 @@ class Retrieval:
         failure = None
         cleanup_failed = False
         try:
-            proc.wait(timeout=self.backend_timeout)
+            if job is None:
+                macos_guard.wait_for_backend(proc, self.backend_timeout, exceeded)
+            else:
+                proc.wait(timeout=self.backend_timeout)
         except subprocess.TimeoutExpired:
             failure = 'backend_timeout'
         except Exception:
             failure = 'backend_runtime_failed'
         finally:
-            if failure:
+            if failure and job is not None:
                 try:
                     proc.kill()
                     proc.wait(timeout=5)
                 except Exception:
                     cleanup_failed = True
             try:
-                job.Close()
+                if job is None:
+                    macos_guard.stop_backend(proc)
+                else:
+                    job.Close()
             except Exception:
                 cleanup_failed = True
             try:

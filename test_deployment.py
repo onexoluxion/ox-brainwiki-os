@@ -1,7 +1,8 @@
 import json, os, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from unittest.mock import patch
-import win32api, win32security
+if os.name == 'nt':
+    import win32api, win32security
 from ox_retrieval import Retrieval, pinned_directories, RuntimeFailure
 from state_guard import validate_acl
 
@@ -11,6 +12,7 @@ class DeploymentBoundaries(unittest.TestCase):
         (root/'notes/a.md').write_text('identifier and knowledge')
         return Retrieval(root,Path(tmp)/'state')
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows DACL and handle checks')
     def test_private_state_acl_and_exclusive_lock(self):
         with tempfile.TemporaryDirectory() as tmp:
             r=self.setup_app(tmp)
@@ -21,6 +23,7 @@ class DeploymentBoundaries(unittest.TestCase):
                 with self.assertRaises(OSError):r.state.rename(Path(tmp)/'moved')
             with r.state_guard():pass
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows DACL check')
     def test_broad_state_rejected_without_acl_rewrite(self):
         with tempfile.TemporaryDirectory() as tmp:
             r=self.setup_app(tmp);r.state.mkdir()
@@ -29,6 +32,7 @@ class DeploymentBoundaries(unittest.TestCase):
             after=win32security.ConvertSecurityDescriptorToStringSecurityDescriptor(win32security.GetFileSecurity(str(r.state),win32security.DACL_SECURITY_INFORMATION),1,win32security.DACL_SECURITY_INFORMATION)
             self.assertEqual(before,after)
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows junction check')
     def test_state_junction_no_external_write(self):
         with tempfile.TemporaryDirectory() as tmp:
             r=self.setup_app(tmp);outside=Path(tmp)/'outside';outside.mkdir()
@@ -38,6 +42,7 @@ class DeploymentBoundaries(unittest.TestCase):
                 self.assertEqual(list(outside.iterdir()),[])
             finally:r.state.rmdir()
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows junction check')
     def test_source_junction_swap_between_validation_and_pin(self):
         with tempfile.TemporaryDirectory() as tmp:
             r=self.setup_app(tmp);outside=Path(tmp)/'outside';outside.mkdir();(outside/'a.md').write_text('SECRET')
@@ -55,6 +60,7 @@ class DeploymentBoundaries(unittest.TestCase):
                 if (r.root/'notes').is_junction():(r.root/'notes').rmdir()
             self.assertEqual((outside/'a.md').read_text(),'SECRET')
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows short name check')
     def test_actual_short_name_alias_denied(self):
         with tempfile.TemporaryDirectory() as tmp:
             r=self.setup_app(tmp);private=r.root/'notes'/'private long directory';private.mkdir();(private/'hidden.md').write_text('SECRET')
@@ -90,6 +96,7 @@ class DeploymentBoundaries(unittest.TestCase):
             with self.assertRaises(RuntimeError):r.backend('-c','import time; time.sleep(30)')
             self.assertEqual(r.backend('-c','print("ok")').strip(),'ok')
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows Job Object setup check')
     def test_job_setup_failure_never_launches_child(self):
         with tempfile.TemporaryDirectory() as tmp:
             r = self.setup_app(tmp)

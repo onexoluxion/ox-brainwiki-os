@@ -42,6 +42,7 @@ class Hardening(unittest.TestCase):
             for call in (r.read, r.list, lambda p: r.search('x', 'exact', p)):
                 with self.subTest(path=path), self.assertRaises(ValueError): call(path)
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows file-open check')
     def test_opened_object_validated(self):
         from unittest.mock import patch
         r = Retrieval()
@@ -80,6 +81,7 @@ class Hardening(unittest.TestCase):
             env = Retrieval().env()
             for key in ('BASIC_MEMORY_DATABASE_URL','HF_ENDPOINT','PYTHONPATH'):
                 self.assertNotIn(key, env)
+            self.assertEqual(env['HF_HUB_DISABLE_SYMLINKS'], '1')
 
 class Configuration(unittest.TestCase):
     def test_schema_and_relative_paths(self):
@@ -95,6 +97,7 @@ class Configuration(unittest.TestCase):
             config.write_text('{"root":"a","root":"b"}')
             with self.assertRaises(ValueError): load_config(config)
 
+@unittest.skipUnless(os.name == 'nt', 'Windows directory handle checks')
 class DirectoryPins(unittest.TestCase):
     def test_pinned_parent_cannot_be_renamed(self):
         from ox_retrieval import pinned_directories

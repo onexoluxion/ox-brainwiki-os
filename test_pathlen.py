@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -15,6 +16,7 @@ def long_state(tmp):
     assert len(str(state)) > LIMIT
     return state
 
+@unittest.skipUnless(os.name == 'nt', 'Windows path length checks')
 class PathLength(unittest.TestCase):
     def test_long_state_rejected_without_long_paths(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(ox_retrieval, 'long_paths_enabled', return_value=False):

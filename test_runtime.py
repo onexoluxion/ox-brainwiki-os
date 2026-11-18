@@ -3,6 +3,7 @@ from contextlib import contextmanager
 import hashlib
 from importlib.metadata import PackageNotFoundError
 import json
+import os
 from pathlib import Path
 import sqlite3
 import struct
@@ -14,7 +15,8 @@ import unittest
 from unittest.mock import patch
 
 import sqlite_vec
-import win32api
+if os.name == 'nt':
+    import win32api
 from index_health import EMBEDDING_IDENTITY, inspect_index
 from ox_retrieval import Retrieval, RuntimeFailure, client_tool
 from runtime_receipt import MAX_RECEIPT_BYTES, SCHEMA, read_receipt, write_receipt
@@ -245,9 +247,12 @@ class SearchAndErrors(unittest.TestCase):
             sentinel = outside/'sentinel.txt'
             sentinel.write_text('synthetic unrelated content')
             link = source.state/'models'/'redirected'
-            command = str(Path(win32api.GetSystemDirectory())/'cmd.exe')
-            subprocess.run([command,'/c','mklink','/J',str(link),str(outside)],
-                           check=True, capture_output=True)
+            if os.name == 'nt':
+                command = str(Path(win32api.GetSystemDirectory())/'cmd.exe')
+                subprocess.run([command,'/c','mklink','/J',str(link),str(outside)],
+                               check=True, capture_output=True)
+            else:
+                link.symlink_to(outside, target_is_directory=True)
             try:
                 with patch('runtime_acceptance.Retrieval', return_value=source):
                     with self.assertRaises(ValueError):
@@ -255,7 +260,10 @@ class SearchAndErrors(unittest.TestCase):
                 self.assertFalse(target.state.exists())
                 self.assertEqual(sentinel.read_text(), 'synthetic unrelated content')
             finally:
-                link.rmdir()
+                if os.name == 'nt':
+                    link.rmdir()
+                else:
+                    link.unlink()
 
     def test_client_boundary_never_exposes_state_exceptions(self):
         with tempfile.TemporaryDirectory() as tmp:

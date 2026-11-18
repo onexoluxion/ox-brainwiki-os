@@ -1,7 +1,7 @@
 # OX BrainWiki OS
 
 A private Markdown Wiki, opened in the free Obsidian app, that an AI coding agent can search and read through one read-only MCP connector. Guided onboarding creates Wiki folders, private identity, project cabinets and a reviewed capture workflow.
-Windows only in this version (the hardening uses pywin32).
+Runs on Windows and Apple silicon Macs with macOS 15 or later.
 Former working name: Community Edition.
 
 ## Method
@@ -22,7 +22,19 @@ Install Python 3.12, uv, Git, the [free Obsidian app](https://obsidian.md/downlo
 uv sync --frozen --python 3.12
 ```
 
-Then follow [Onboard](#onboard) to create/adopt the vault and its external configuration before indexing. This is guided setup; cloning alone does not create or open a vault. Runtime release 0.3.0 remains current; the v0.4.0 performance plan is not implemented by this onboarding update.
+Then follow [Onboard](#onboard) to create or adopt the vault before indexing.
+
+### Mac quick start
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and [Obsidian](https://obsidian.md/download), then open Terminal:
+
+```sh
+git clone https://github.com/onexoluxion/ox-brainwiki-os.git
+cd ox-brainwiki-os
+uv sync --frozen --python 3.12 --managed-python
+```
+
+Open the clone as a project in Codex or Claude Code and ask it to follow [the onboarding skill](skills/onboard/SKILL.md). It helps you open your Wiki in Obsidian, create a private runtime folder, index your approved notes, and connect your client. The executable on macOS is `.venv/bin/python`. Clone `main` for the macOS build.
 
 Developer demo only: commands without `--config` use fictional fixtures. Historical 2026-11-06 fixture receipt: `uv sync` exit 0 (5 s); `index` exit 0 (27 s with a state path of 46 characters, including the first model download, 67 MB state directory afterwards); `status` exit 0 reporting `"fresh": true`; `serve` started the stdio server and exited 0 when its stdin closed.
 
@@ -34,7 +46,7 @@ After onboarding creates `<runtime>/retrieval.config.json`, register the stdio c
 claude mcp add ox-brainwiki -- "<repo>/.venv/Scripts/python.exe" "<repo>/ox_retrieval.py" serve --config "<runtime>/retrieval.config.json"
 ```
 
-Codex configuration in `~/.codex/config.toml` follows the [official MCP configuration format](https://learn.chatgpt.com/docs/extend/mcp?surface=cli) (verify this registration in the intended client):
+On Mac, use `<repo>/.venv/bin/python` in the Claude command above and the Codex configuration below. Codex reads its MCP configuration from `~/.codex/config.toml`.
 
 ```toml
 [mcp_servers.ox-brainwiki]
@@ -52,7 +64,7 @@ Review existing root instructions under the operator's authorization before open
 {"root":"C:/BrainWiki/Vault","state":"C:/BrainWiki/Runtime/state","allow":["01_Wiki"],"exclude":[]}
 ```
 
-Choose actual absolute paths outside the clone; vault and runtime must be separate. The state parent must already exist. Relative paths resolve from the configuration file. Unknown/duplicate fields and malformed scopes fail validation. State has a restricted Windows ACL and must stay private; see [Operations](OPERATIONS.md). Raw, Archive, Operations, prompts, Identity, Projects and `.obsidian` are outside the default allow-list. Review sensitivity before expanding scope. Pass `scope="01_Wiki"` to search and `path="01_Wiki"` to list; tool defaults still use the developer `notes` scope.
+Choose actual absolute paths outside the clone. On Mac, use folders under your home directory and enter their full paths in JSON. Keep the vault and runtime separate, and create the state directory's parent first. Relative paths resolve from the configuration file. The connector validates configuration and private state permissions on both platforms. Raw, Archive, Operations, prompts, Identity, Projects and `.obsidian` are outside the default allow-list. Review sensitivity before expanding scope. Pass `scope="01_Wiki"` to search and `path="01_Wiki"` to list. [Operations](OPERATIONS.md).
 
 ## Onboard
 
@@ -96,7 +108,7 @@ See [performance design and measurement protocol](PERFORMANCE_DESIGN.md) for the
 
 ## Known limitations
 
-- Windows only; the code requires pywin32 and Python 3.12 and is not portable to POSIX.
+- Python 3.12 is required. The locked macOS embedding runtime targets Apple silicon.
 - The embedding model download is not pinned by the code; the tested revision and artifact hashes are in `MODEL_PROVENANCE.json`.
 - Obsidian desktop and Codex/Claude CLI acceptance passed in a clean fictional vault on 2026-11-09. Fresh-machine setup, persistent registrations and other client surfaces still need their own checks; see [validation limits](ONBOARDING_VALIDATION.md).
 - Windows path length: see Install.
