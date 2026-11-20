@@ -84,7 +84,8 @@ def validate_state_parent(path):
 
 
 @contextmanager
-def locked_state(path):
+def locked_state(path, scanned=None):
+    """Yield (lock, identity). Skip the tree scan when `scanned` is this directory's identity."""
     validate_state_parent(path.parent)
     with open_verified(path.parent, DIRECTORY) as parent:
         try:
@@ -93,6 +94,7 @@ def locked_state(path):
             pass
         with open_verified(path, DIRECTORY, parent=parent) as state:
             info = os.fstat(state)
+            identity = (info.st_dev, info.st_ino)
             if info.st_uid != os.geteuid() or info.st_mode & 0o077:
                 raise ValueError('state directory must be private to its owner')
             reject_acl_grants(state)
@@ -104,13 +106,13 @@ def locked_state(path):
                     raise ValueError('untrusted state lock')
                 reject_acl_grants(lock)
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                for entry in path.rglob('*'):
+                for entry in path.rglob('*') if identity != scanned else ():
                     info = entry.lstat()
                     if (info.st_uid != os.geteuid()
                             or not (stat.S_ISDIR(info.st_mode)
                                     or (stat.S_ISREG(info.st_mode) and info.st_nlink == 1))):
                         raise ValueError('linked or untrusted state entry')
-                yield lock
+                yield lock, identity
 
 
 def verify_source(fd):
