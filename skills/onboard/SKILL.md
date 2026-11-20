@@ -21,7 +21,7 @@ Use the operating system date. Record each step as `done`, `pending`, `skipped` 
 
 ## Step 1: requirements
 
-Check Windows or an Apple silicon Mac with macOS 15 or later, then check `uv --version`, `git --version`, and the chosen agent CLI or desktop client. Record versions and exit codes. Run `uv sync --frozen --python 3.12` from `<repo>` when installation is authorized, adding `--managed-python` on Mac.
+Check Windows or an Apple silicon Mac with macOS 15 or later, then check `uv --version`, `uv python find 3.12` (Windows), `git --version`, and the chosen agent CLI or desktop client. Record versions and exit codes. Run `uv sync --frozen --python 3.12` from `<repo>` when installation is authorized, adding `--managed-python` on Mac.
 
 Check whether Obsidian is installed. If missing, guide installation from the [official download](https://obsidian.md/download), using its normal installer when authorized. The [base app is free for personal and commercial use](https://obsidian.md/license); no account, Sync, Publish or community plugins are required. Obsidian is separately licensed and installed; its binary is not bundled here. Do not run remote installation scripts. An installed executable alone does not prove the vault opened; that is step 3. Missing requirements remain pending.
 

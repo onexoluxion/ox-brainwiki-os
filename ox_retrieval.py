@@ -201,6 +201,10 @@ def load_config(filename):
         raise ValueError('empty allowlist')
     return dict(root=data['root'], state=data['state'], allowed=data['allow'], excluded=data['exclude'])
 
+def windows_alias(path):
+    """8.3 short names (`~`) and trailing dots/spaces alias other names only on Windows."""
+    return os.name == 'nt' and any(part.endswith(('.', ' ')) or '~' in part for part in path.parts)
+
 class Retrieval:
     def __init__(self, root=BASE / 'fixtures', state=BASE / '.state-secure', allowed=('notes',), excluded=('notes/private',)):
         if os.name != 'nt' and not (sys.platform == 'darwin' and platform.machine() == 'arm64'):
@@ -211,7 +215,7 @@ class Retrieval:
             if len(str(self.state)) > limit and not long_paths_enabled():
                 raise ValueError(f'state path too long for Windows: {len(str(self.state))} characters, limit {limit}; use a shorter install or state path, or enable Windows long paths (LongPathsEnabled)')
         for selected in (self.root, self.state):
-            if any(part.endswith(('.', ' ')) or '~' in part for part in selected.parts):
+            if windows_alias(selected):
                 raise ValueError('root/state alias denied')
         with pinned_directories(self.root): pass
         with pinned_directories(self.state.parent): pass
@@ -237,7 +241,7 @@ class Retrieval:
         if not isinstance(name, str) or len(name) > 512 or '\\' in name or ':' in name:
             raise ValueError('path denied')
         p = Path(name)
-        if any(part.endswith(('.', ' ')) or '~' in part for part in p.parts):
+        if windows_alias(p):
             raise ValueError('path alias denied')
         if p.is_absolute() or PureWindowsPath(name).drive or '..' in p.parts:
             raise ValueError('path denied')
@@ -340,7 +344,9 @@ class Retrieval:
         self.path(path, True)
         if type(limit) is not int or not 1 <= limit <= 50:
             raise ValueError('invalid limit')
-        names = [p for p in self.inventory() if p == path or p.startswith(path.rstrip('/') + '/')]
+        path_key = macos_guard.path_key if sys.platform == 'darwin' else str.casefold
+        prefix = path_key(path.rstrip('/'))
+        names = [p for p in self.inventory() if path_key(p) == prefix or path_key(p).startswith(prefix + '/')]
         return {'paths': sorted(names)[:limit], 'truncated': len(names) > limit}
 
     def env(self):
