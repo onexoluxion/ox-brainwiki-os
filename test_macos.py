@@ -58,6 +58,14 @@ class MacBoundaries(unittest.TestCase):
             self.app.index()
         self.assertEqual(list(outside.iterdir()), [])
 
+    def test_tilde_vault_path_is_accepted(self):
+        # Obsidian's iCloud folder is named iCloud~md~obsidian; `~` is not an alias on macOS.
+        root = self.parent / 'iCloud~md~obsidian' / 'Vault'
+        (root / 'notes').mkdir(parents=True)
+        (root / 'notes' / 'a~b.md').write_text('tilde note', encoding='utf-8')
+        app = Retrieval(root, self.parent / 'tilde-state')
+        self.assertEqual(app.read('notes/a~b.md')['content'], 'tilde note')
+
     def test_source_swap_at_open_is_rejected(self):
         outside = self.parent / 'outside.md'
         outside.write_text('excluded', encoding='utf-8')

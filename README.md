@@ -46,7 +46,7 @@ After onboarding creates `<runtime>/retrieval.config.json`, register the stdio c
 claude mcp add ox-brainwiki -- "<repo>/.venv/Scripts/python.exe" "<repo>/ox_retrieval.py" serve --config "<runtime>/retrieval.config.json"
 ```
 
-On Mac, use `<repo>/.venv/bin/python` in the Claude command above and the Codex configuration below. Codex reads its MCP configuration from `~/.codex/config.toml`.
+On Mac, use `<repo>/.venv/bin/python` in the Claude command above and the Codex configuration below. Codex reads its MCP configuration from `~/.codex/config.toml`, following the [official MCP configuration format](https://learn.chatgpt.com/docs/extend/mcp?surface=cli) (verify this registration in the intended client).
 
 ```toml
 [mcp_servers.ox-brainwiki]
