@@ -254,7 +254,8 @@ class SearchAndErrors(unittest.TestCase):
             else:
                 link.symlink_to(outside, target_is_directory=True)
             try:
-                with patch('runtime_acceptance.Retrieval', return_value=source):
+                # reuse_models builds a fresh instance, as here, so the full state scan runs.
+                with patch('runtime_acceptance.Retrieval', return_value=Retrieval(source.root, source.state)):
                     with self.assertRaises(ValueError):
                         reuse_models(target)
                 self.assertFalse(target.state.exists())

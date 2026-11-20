@@ -49,6 +49,28 @@ class Hardening(unittest.TestCase):
                 self.assertEqual(r.list(path)['paths'], [])
                 self.assertEqual(r.search('x', 'exact', path)['results'], [])
 
+    def test_state_tree_scanned_once_per_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = Retrieval(state=Path(tmp)/'state')
+            scans = []
+            original = Path.rglob
+            def counted(p, *args, **kwargs):
+                if p == r.state: scans.append(p)
+                return original(p, *args, **kwargs)
+            with patch.object(Path, 'rglob', counted):
+                for _ in range(3):
+                    with r.state_guard(): pass
+                self.assertEqual(len(scans), 1)
+                r._state_scanned = None  # what index() does before rewriting state
+                with r.state_guard(): pass
+                self.assertEqual(len(scans), 2)
+            with r.state_guard():
+                (r.state/'planted').write_text('x')
+            os.link(r.state/'planted', Path(tmp)/'outside')
+            # A new process (instance) scans again and refuses the linked entry.
+            with self.assertRaises(ValueError):
+                with Retrieval(state=r.state).state_guard(): pass
+
     @unittest.skipUnless(os.name == 'nt', 'Windows file-open check')
     def test_opened_object_validated(self):
         from unittest.mock import patch

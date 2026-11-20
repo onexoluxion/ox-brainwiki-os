@@ -42,22 +42,24 @@ def guarded(method):
     return call
 
 @contextmanager
-def windows_state(app):
+def windows_state(app, scanned=None):
     from ox_retrieval import pinned_directories
     # Parent is operator-selected and must already exist: never create arbitrary ancestor trees.
     with pinned_directories(app.state.parent):
         if not app.state.exists():create_private(app.state)
         with pinned_directories(app.state):
             validate_acl(app.state)
+            info = os.stat(app.state)
+            identity = (info.st_dev, info.st_ino)
             # Existing state is trusted operator data, never a writable source subtree.
-            for p in app.state.rglob('*'):
+            for p in app.state.rglob('*') if identity != scanned else ():
                 if p.is_symlink() or p.is_junction():raise ValueError('linked state denied')
                 if p.is_file() and p.stat().st_nlink != 1:raise ValueError('linked state file denied')
                 validate_acl(p)
             lock=app.state/'operation.lock'
             handle=win32file.CreateFile(str(lock),win32con.GENERIC_READ|win32con.GENERIC_WRITE,0,None,win32con.OPEN_ALWAYS,win32con.FILE_ATTRIBUTE_NORMAL|0x00200000,None)
             try:
-                yield
+                yield None, identity
             finally:
                 handle.Close()
 
@@ -67,8 +69,13 @@ def state_guard(app):
     if getattr(app._guard_local, 'depth', 0):
         yield
         return
-    guard = windows_state(app) if os.name == 'nt' else locked_state(app.state)
-    with guard as lock:
+    # The private state directory is re-validated on every call, so only this
+    # process (and its backend) can add entries: scan the whole tree once per
+    # state directory, and again after index() rewrites it.
+    scanned = getattr(app, '_state_scanned', None)
+    guard = windows_state(app, scanned) if os.name == 'nt' else locked_state(app.state, scanned)
+    with guard as (lock, identity):
+        app._state_scanned = identity
         app._guard_local.depth = 1
         app._guard_local.lock = lock
         try:

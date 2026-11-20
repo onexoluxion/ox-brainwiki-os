@@ -532,6 +532,7 @@ class Retrieval:
 
     @guarded
     def index(self):
+        self._state_scanned = None  # index rewrites state: the next call rescans the tree
         self.state.mkdir(parents=True, exist_ok=True)
         # State is operator-owned. Reject existing links before any writes/deletions.
         for p in [self.state, *self.state.rglob('*')]:
