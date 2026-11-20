@@ -39,8 +39,15 @@ class Hardening(unittest.TestCase):
     def test_aliases_all_operations(self):
         r = Retrieval()
         for path in ('notes/private./hidden.md', 'notes/private /hidden.md', 'notes/PRIVAT~1/hidden.md'):
-            for call in (r.read, r.list, lambda p: r.search('x', 'exact', p)):
-                with self.subTest(path=path), self.assertRaises(ValueError): call(path)
+            if os.name == 'nt':
+                for call in (r.read, r.list, lambda p: r.search('x', 'exact', p)):
+                    with self.subTest(path=path), self.assertRaises(ValueError): call(path)
+                continue
+            # Elsewhere these are distinct names, not aliases of notes/private: nothing leaks.
+            with self.subTest(path=path):
+                with self.assertRaises(ValueError): r.read(path)
+                self.assertEqual(r.list(path)['paths'], [])
+                self.assertEqual(r.search('x', 'exact', path)['results'], [])
 
     @unittest.skipUnless(os.name == 'nt', 'Windows file-open check')
     def test_opened_object_validated(self):
