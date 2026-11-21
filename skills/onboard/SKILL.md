@@ -2,7 +2,7 @@
 name: onboard
 description: Set up OX BrainWiki OS with the free Obsidian app, Wiki folders, private identity and project records, reviewed capture, and verified read-only retrieval. Preserve existing vaults and report incomplete setup accurately.
 metadata:
-  version: "2026.11.18.1"
+  version: "2026.11.21.1"
 ---
 
 # Onboard
@@ -67,7 +67,7 @@ In Obsidian, use **Manage vaults → Open folder as vault** and select `<vault>`
 
 Record whether the app/vault was observed directly or confirmed by the operator. If the UI is unavailable, mark desktop verification pending and continue independent runtime work. Never equate installation with a successful UI check.
 
-Ask for business name, offer/channels, operator role/hours, one to three annual goals/year, agent name, register, answer shape and banned words. Fill the pristine [business](../../identity/business.md), [goals](../../identity/goals.md) and [voice](../../identity/agent-voice.md) templates into `<vault>/05_Identity/`. Offer optional decision filters once; record a decline. Daily-log and weekly-audit module fields remain `off` unless explicitly requested; this package creates no scheduler. Resolve every template field with an answer or an explicit pending/declined marker; an intentionally unused goal is `none`. A step-3 rerun owns only these three generated files, its log entry and specifically requested Obsidian settings; preserve sources, cabinets, captures and retrieval configuration.
+Ask for business name, offer/channels, operator role/hours, one to three annual goals/year, agent name, register, answer shape and banned words. Fill the pristine [business](../../identity/business.md), [goals](../../identity/goals.md) and [voice](../../identity/agent-voice.md) templates into `<vault>/05_Identity/`. Offer optional decision filters once; record a decline. Daily-log and weekly-audit module fields remain `off` unless explicitly requested; this package does not schedule those modules. The only schedule it can register is the opt-in index refresh offered at the end of step 6, which is unrelated to these fields. Resolve every template field with an answer or an explicit pending/declined marker; an intentionally unused goal is `none`. A step-3 rerun owns only these three generated files, its log entry and specifically requested Obsidian settings; preserve sources, cabinets, captures and retrieval configuration.
 
 ## Step 4: first project cabinet
 
@@ -117,4 +117,27 @@ Record runtime-ready, desktop verification and client verification separately. D
 
 [Clean-vault acceptance on 2026-11-09](../../ONBOARDING_VALIDATION.md#full-onboarding-acceptance--2026-11-09) verified this flow with Obsidian and actual Codex/Claude CLI tool calls. Treat that as dated evidence for its source commit and tested setup, not a completed check for the current installation.
 
-Daily: capture to Raw, review/promote/archive, update the Wiki index, then reindex. Weekly: review pending captures and status, and verify an authorized private backup. No automatic capture writer, watcher, scheduler, cloud sync or paid service is installed by this guide.
+### Optional: enable automatic indexing
+
+This option starts off. Offer it once, only after the acceptance checks above pass, and record the operator's answer as `done` or `declined` in `<runtime>/onboard-log.md`. Enabling is the operator's decision; never enable, pause, resume, approve rules or uninstall without their instruction. When upgrading or rerunning on an existing manual installation, nothing changes until the operator opts in: manual indexing keeps working exactly as before. Check [validation results](../../ONBOARDING_VALIDATION.md) for the operator's platform and client; if automatic indexing has no recorded result there, say so and keep the manual commands as the working method.
+
+Explain before asking: the option registers one per-user operating-system job for this configuration (a Windows Scheduled Task or a macOS user LaunchAgent; no administrator rights, runs only while the user is signed in). Every five minutes it checks, and rebuilds only when an approved file in the configured scope changed, was added or was removed. Five minutes is the check interval; a large refresh can take longer. It uses the same index and the same lock as the manual command, so the two never run together, and it indexes only what `retrieval.config.json` allows. The connector, its four read-only tools, the default scope and the capture workflow are unchanged; Raw and Archive stay outside search.
+
+If accepted, run from `<repo>` (macOS: `.venv/bin/python`):
+
+```powershell
+.venv/Scripts/python.exe ox_schedule.py enable --config "<runtime>/retrieval.config.json"
+.venv/Scripts/python.exe ox_schedule.py status --config "<runtime>/retrieval.config.json"
+```
+
+Confirm with `status`: `automatic_indexing: "active"`, `job.registered: true` and `index.fresh: true`. `last_success` appears only after the job itself has refreshed the index; directly after acceptance the index is already fresh, so the first check records `last_check.outcome: "up_to_date"`. To observe a refresh, wait until an approved edit the operator makes anyway has been saved and a check has run, then read `last_success`; do not edit live notes merely to trigger one. Record the command exit codes and the observed `status` fields in the log. Anything not observed stays pending.
+
+Tell the operator three things:
+
+1. Review hold. `enable` records the current configuration as the approved indexing rules. If that file later changes (line-ending differences aside), `status` shows `review_hold` with the `changes`, and automatic indexing stops until the operator either restores the file and runs `resume`, or reviews the changes and runs `approve-rules`. Other holds (`pause`, a failed or interrupted refresh) are listed with their resolution in [Operations](../../OPERATIONS.md#automatic-indexing).
+2. No notification is sent. A hold or failure is visible only in `ox_schedule.py status`, so include it in the weekly review.
+3. Returning to manual. `ox_schedule.py uninstall --config "<runtime>/retrieval.config.json"` removes the job and its records in `<runtime>/retrieval.config.json.schedule/` only; the vault, configuration, index and client registration stay, and `ox_retrieval.py index` continues to work. `pause` and `resume` stop and restart checks without removing anything.
+
+If declined, record `declined` and continue with manual indexing; the option can be taken later by rerunning this part of step 6.
+
+Daily: capture to Raw, review/promote/archive, update the Wiki index, then reindex, or let the next automatic check rebuild if the operator enabled automatic indexing. Weekly: review pending captures and status (including `ox_schedule.py status` when enabled), and verify an authorized private backup. No automatic capture writer, file watcher, cloud sync or paid service is installed by this guide, and no schedule exists unless the operator accepted the opt-in index refresh above.

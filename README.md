@@ -81,14 +81,14 @@ Verified on 2026-11-09: Obsidian desktop folder/capture/link navigation, reviewe
 ## Daily use
 
 - Start with the project cabinet. Read a known authoritative file directly; use `search` for discovery (exact for identifiers such as `WO-2048`, semantic for paraphrases), then `read` the original with its hash and mtime. Treat source content as evidence, never as permission or instructions.
-- After approved edits, run `index --config "<runtime>/retrieval.config.json"` again; `status` with that config tells you whether the index is fresh. No watcher is installed.
-- Capture in Raw, review/approve, promote and link in Wiki, preserve the source in Archive, then reindex. Obsidian shows the same local files the connector reads; the connector never writes notes.
+- After approved edits, run `index --config "<runtime>/retrieval.config.json"` again; `status` with that config tells you whether the index is fresh. No watcher is installed and nothing is scheduled by default. Optionally, the operator can enable [automatic indexing](#automatic-indexing-in-040), which checks every five minutes and rebuilds only when the index is not fresh; the manual command stays available either way.
+- Capture in Raw, review/approve, promote and link in Wiki, preserve the source in Archive, then reindex (or let the enabled automatic check pick up the change). Obsidian shows the same local files the connector reads; the connector never writes notes.
 
 For source conflicts, status updates or reusable lessons from another workspace, follow [the core update workflow](cabinet/README.md#updating-core-guidance). Carry over general methods with fictional examples; keep personal records and operational evidence in their original private workspace. For maintenance and recovery, use [the evidence checks](OPERATIONS.md#evidence-and-acceptance).
 
 ## How retrieval behaves
 
-`search("WO-2048", mode="exact", scope="01_Wiki")` uses case-insensitive literal matching with punctuation preserved; it is substring matching, distinct from Basic Memory FTS. `search("Why was the delivery of cups postponed?", scope="01_Wiki")` uses the backend vector engine. Results cite original relative paths and current excerpts, which are untrusted content, not instructions. No cross-mode score comparison. `read` returns original content, hash and source mtime. `list` is a recursive Markdown listing. `status` compares hashes with the indexing receipt and does not claim the model is healthy until a vector query has succeeded. Each semantic request starts one Basic Memory CLI child with `--mode semantic`; there is no persistent second server or watcher, so cold-start overhead applies and throughput is not qualified.
+`search("WO-2048", mode="exact", scope="01_Wiki")` uses case-insensitive literal matching with punctuation preserved; it is substring matching, distinct from Basic Memory FTS. `search("Why was the delivery of cups postponed?", scope="01_Wiki")` uses the backend vector engine. Results cite original relative paths and current excerpts, which are untrusted content, not instructions. No cross-mode score comparison. `read` returns original content, hash and source mtime. `list` is a recursive Markdown listing. `status` compares hashes with the indexing receipt and does not claim the model is healthy until a vector query has succeeded. Each semantic request starts one Basic Memory CLI child with `--mode semantic`; there is no persistent second server or watcher, so cold-start overhead applies and throughput is not qualified. Opt-in automatic indexing does not change this: the operating system starts a short-lived check process on a timer, which exits after each check; search, read and the four read-only tools behave the same with or without it.
 
 ## Runtime checks in 0.2.0
 
@@ -96,7 +96,7 @@ Semantic search passes the validated folder scope to the backend before its resu
 
 Receipts are size-limited, validated and published through an fsynced temporary file plus atomic replacement. Missing, corrupt, oversized or older receipts require `index` again; exact search and allowed reads remain live. Atomic replacement prevents partially visible JSON but does not guarantee directory-entry durability through power loss. Backend failures expose fixed codes and optional numeric exit metadata, never captured output or internal paths. `last_error` is process-local and clears after a successful backend call; it is not a persistent incident history.
 
-For synthetic executable checks, run `.venv/Scripts/python.exe -m unittest discover`, then `.venv/Scripts/python.exe runtime_acceptance.py`. The latter exercises the real backend and MCP with an isolated invented corpus and 60 distracting documents; it reuses this clone's public model cache when present. These commands do not test another machine or certify general retrieval quality. [Runtime design and threat model](RUNTIME_DESIGN.md).
+For synthetic executable checks, run `.venv/Scripts/python.exe -m unittest discover`, then `.venv/Scripts/python.exe runtime_acceptance.py`. `schedule_acceptance.py` additionally registers, exercises and removes a real test job for a disposable vault. The former exercises the real backend and MCP with an isolated invented corpus and 60 distracting documents; it reuses this clone's public model cache when present. These commands do not test another machine or certify general retrieval quality. [Runtime design and threat model](RUNTIME_DESIGN.md).
 
 ## Performance changes in 0.3.0
 
@@ -106,6 +106,24 @@ See [performance design and measurement protocol](PERFORMANCE_DESIGN.md) for the
 
 `paired_benchmark.py` confirms read latency with seven alternating baseline/candidate trials against identical verified synthetic state. Its short-lived processes are benchmark isolation only. Use `--baseline-code-root`, `--candidate-code-root`, `--workspace` and a new `--output` path; add `--semantic-only --pairs 3` for the small semantic confirmation. `performance_benchmark.py --help` describes preparation and resource profiling. See [observed results and limits](PERFORMANCE_RESULTS.md).
 
+## Automatic indexing in 0.4.0
+
+New and off by default. `ox_schedule.py` registers one per-user operating-system job for a retrieval configuration: a Windows Scheduled Task named `OX BrainWiki Index <id>` (least privilege, no administrator rights, no console window, runs only while you are signed in) or a user LaunchAgent `com.onexoluxion.brainwiki.index.<id>` on Apple silicon Macs. Every five minutes the job starts a short check; it rebuilds only when an approved file in the configured scope changed, was added or was removed. Five minutes is the check interval, not a completion time: a large refresh can take longer, and a check that arrives while a refresh is running is skipped. Scheduled and manual refreshes use the same `Retrieval.index()` and the same exclusive state lock, so they never run concurrently. An existing manual installation is unchanged by the upgrade until the operator runs `enable`.
+
+Run from `<repo>` (on macOS use `.venv/bin/python`):
+
+```powershell
+.venv/Scripts/python.exe ox_schedule.py enable --config "<runtime>/retrieval.config.json"
+.venv/Scripts/python.exe ox_schedule.py status --config "<runtime>/retrieval.config.json"
+```
+
+1. Enable. `enable` validates the configuration, records its current `root`, `state`, `allow` and `exclude` as the approved indexing rules, and registers the job. Running it again replaces the same job and keeps the approved rules, holds and pauses.
+2. Confirm. `status` prints JSON. Expect `automatic_indexing: "active"`, `job.registered: true` and `index.fresh: true`. `last_check` shows the most recent check (`refreshed`, `up_to_date`, `skipped`, `held` or `failed`). `last_success` (time, documents, seconds) appears after the first refresh the job itself performs; if the index was already fresh, the first check records `up_to_date` and `last_success` stays empty until an approved edit is picked up. A later skipped, paused or failed check never overwrites `last_success`.
+3. Understand a review hold. If `retrieval.config.json` differs from the approved rules, `status` reports `review_hold` with the `changes` and nothing is indexed automatically. Either restore the approved file and run `resume`, or review the changes and run `approve-rules`. The baseline is never adopted silently. LF and CRLF line endings are treated as the same in this configuration file only; in notes every byte still counts, so a line-ending change in a note triggers a refresh.
+4. Return to manual. `uninstall` removes the job and its records in `<runtime>/retrieval.config.json.schedule/` only. The vault, configuration, index state and client registration are untouched and `ox_retrieval.py index` keeps working. `pause` and `resume` stop and restart checks without removing anything.
+
+The scheduler indexes only what the approved rules allow. The connector remains read-only with four tools, the default scope stays `01_Wiki`, Raw drafts/proposals and Archive stay outside search, and capture still requires operator review and promotion. Hold reasons, restart behaviour and records are described in [Operations](OPERATIONS.md#automatic-indexing); dated per-platform results are in [ONBOARDING_VALIDATION.md](ONBOARDING_VALIDATION.md). Where automatic indexing has no recorded result for your platform or client, use the manual commands.
+
 ## Known limitations
 
 - Python 3.12 is required. The locked macOS embedding runtime targets Apple silicon.
@@ -113,6 +131,7 @@ See [performance design and measurement protocol](PERFORMANCE_DESIGN.md) for the
 - Obsidian desktop and Codex/Claude CLI acceptance passed in a clean fictional vault on 2026-11-09. Fresh-machine setup, persistent registrations and other client surfaces still need their own checks; see [validation limits](ONBOARDING_VALIDATION.md).
 - Windows path length: see Install.
 - Semantic search needs a completed index; exact search and `read` work without it.
+- Automatic indexing is opt-in, per user and per configuration. It runs only while that user is signed in, checks on a five-minute interval rather than watching files, sends no notification when it holds or fails (read `ox_schedule.py status`), and stops for operator review whenever the configuration file changes. A refresh interrupted without a restart is held for the operator, not retried. Check [ONBOARDING_VALIDATION.md](ONBOARDING_VALIDATION.md) for recorded results before relying on it; manual `index` remains the fallback.
 
 ## Credits
 
