@@ -20,7 +20,7 @@ Windows 11, locked Python 3.12 environment, reused public model cache, real Wind
 | Persistent manual pause | Native job, simulated restart | A pause survived further scheduled checks, a second `enable` and a leftover earlier-boot run record; the edited note stayed unindexed until `resume` |
 | Uninstall | Native | The task and records folder were removed; vault and configuration hashes unchanged; the index still reported fresh; manual `index` and retrieval still worked |
 
-Trigger evidence: the seller example passed both with an on-demand start of the registered task and, in a separate run, with the task's own time trigger and no on-demand start (60.6 s from edit to refresh; the first trigger fires one minute after `enable`). Later five-minute repetitions are recorded below once observed.
+Trigger evidence: the seller example passed both with an on-demand start of the registered task and, in a separate run, with the task's own time trigger and no on-demand start (60.6 s from edit to refresh; the first trigger fires one minute after `enable`). The same task was then left alone: a second note edit was refreshed by the next repetition 302 s after the first check, and the following repetition 290 s later recorded `up_to_date`. The GitHub-hosted `windows-latest` runner also passed the regression suite and all nine acceptance checks on commit `4009ca8`.
 
 Clients, each through a test-only connection to that disposable vault after the scheduled refresh:
 
@@ -29,9 +29,11 @@ Clients, each through a test-only connection to that disposable vault after the 
 | Codex CLI 0.169.0 | Exit 0; four actual MCP calls (`status`, semantic `search`, exact `search`, `read`). Returned delivery date 2031-03-21, source `01_Wiki/suppliers/harbor-ceramics.md`, fresh index, zero results for the draft's date; the draft read was refused. In non-interactive mode Codex first declined its own MCP calls until the test connection set `default_tools_approval_mode = "approve"` |
 | Claude Code 2.1.329 | Exit 0; four actual MCP calls with the same answers and the same refusal |
 
-### Apple silicon macOS — not verified
+### Apple silicon macOS — scheduler verified on a hosted runner; clients not verified
 
-No Mac result is recorded yet for automatic indexing. The LaunchAgent path is implemented and its job definition is unit-tested, but until a native check passes, Mac users should keep the manual `index` workflow.
+GitHub-hosted `macos-15` runner (Darwin 24.6.0, arm64), commit `4009ca8`, locked Python 3.12 environment, real user LaunchAgent and real backend. `python -m unittest discover`: 96 tests, exit 0, 16 skipped (Windows-only cases). `schedule_acceptance.py`: exit 0, the same nine checks as the Windows table passed in 308.5 s, with the same split: restart recovery used the simulated interruption, the others ran against the native LaunchAgent. The job was started on demand (`launchctl kickstart`) and by its load-time run.
+
+Not verified on macOS: the LaunchAgent's own five-minute interval without an on-demand start, a personal Mac with an ordinary sign-in, restart and sign-out, and retrieval of the refreshed date through Claude Code or Codex on a Mac (no Mac workstation or Mac client was available). Until those pass, treat automatic indexing on a Mac as a candidate and keep the manual `index` workflow available.
 
 ### Limits
 
