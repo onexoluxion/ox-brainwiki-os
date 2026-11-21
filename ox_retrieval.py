@@ -177,6 +177,11 @@ def load_config(filename):
     filename = Path(filename).absolute()
     with filename.open('rb') as stream:
         raw = stream.read(16385)
+    return parse_config(raw, filename)
+
+def parse_config(raw, filename):
+    """Parse bytes the caller already read, so a digest and the parsed rules describe the same bytes."""
+    filename = Path(filename).absolute()
     if len(raw) > 16384:
         raise ValueError('configuration too large')
     def unique(pairs):

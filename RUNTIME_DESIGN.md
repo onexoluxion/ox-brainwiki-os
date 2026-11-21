@@ -1,6 +1,6 @@
 # Runtime release design
 
-Scope: scoped semantic search, durable indexing receipts, completeness checks and bounded error diagnostics. The four read-only MCP tools remain the external interface. Indexing is manual and writes only operator-owned isolated state. No dependency code, private notes or operational artifacts are imported.
+Scope: scoped semantic search, durable indexing receipts, completeness checks and bounded error diagnostics. The four read-only MCP tools remain the external interface. Indexing is manual and writes only operator-owned isolated state (0.4.0 adds opt-in scheduled indexing through the same writer and lock; see [Operations](OPERATIONS.md#automatic-indexing)). No dependency code, private notes or operational artifacts are imported.
 
 ## Decisions before implementation
 

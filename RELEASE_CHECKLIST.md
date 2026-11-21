@@ -1,6 +1,18 @@
 # Release checklist
 
-## Current onboarding acceptance — 2026-11-09
+## Automatic indexing candidate — 2026-11-21 (runtime v0.4.0, not released)
+
+[Results and limits](ONBOARDING_VALIDATION.md#automatic-indexing-acceptance--2026-11-21). Repeat against the exact release commit before tagging.
+
+- [x] Windows: regression suite and nine scheduler acceptance checks through a real Scheduled Task (upgrade, repeated setup, seller example, overlap, LF/CRLF, exclusion change, pause, uninstall native; restart recovery simulated).
+- [x] Windows clients: Codex CLI and Claude Code retrieved the refreshed delivery date and its source file; the unreviewed draft stayed outside search.
+- [x] Apple silicon macOS scheduler: regression suite and the same nine checks through a real LaunchAgent on a hosted `macos-15` arm64 runner (restart recovery simulated; job started on demand).
+- [ ] Apple silicon macOS on a personal Mac: the five-minute interval without an on-demand start, and Claude Code and Codex retrieval, are not verified; manual indexing remains the documented fallback.
+- [ ] Real restart, sign-out and Windows Fast Startup shutdown on a workstation: not exercised; restart recovery is simulated.
+- [ ] Large-vault refresh duration and an unattended multi-day run: not measured.
+- [ ] Website, release notes publication and tag: left for the publication step; not part of this candidate.
+
+## Onboarding acceptance — 2026-11-09
 
 Verified source: `1a7d3b07c2eea2d2a12f8294f2ed8860440ec709`, runtime v0.3.0. [Full results and limits](ONBOARDING_VALIDATION.md#full-onboarding-acceptance--2026-11-09).
 
