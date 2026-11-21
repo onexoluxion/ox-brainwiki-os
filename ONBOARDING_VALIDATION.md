@@ -29,9 +29,11 @@ Clients, each through a test-only connection to that disposable vault after the 
 | Codex CLI 0.169.0 | Exit 0; four actual MCP calls (`status`, semantic `search`, exact `search`, `read`). Returned delivery date 2031-03-21, source `01_Wiki/suppliers/harbor-ceramics.md`, fresh index, zero results for the draft's date; the draft read was refused. In non-interactive mode Codex first declined its own MCP calls until the test connection set `default_tools_approval_mode = "approve"` |
 | Claude Code 2.1.329 | Exit 0; four actual MCP calls with the same answers and the same refusal |
 
-### Apple silicon macOS — scheduler verified on a hosted runner; clients not verified
+### Apple silicon macOS — scheduler intermittent on a hosted runner; clients not verified
 
 GitHub-hosted `macos-15` runner (Darwin 24.6.0, arm64), commit `4009ca8`, locked Python 3.12 environment, real user LaunchAgent and real backend. `python -m unittest discover`: 96 tests, exit 0, 16 skipped (Windows-only cases). `schedule_acceptance.py`: exit 0, the same nine checks as the Windows table passed in 308.5 s, with the same split: restart recovery used the simulated interruption, the others ran against the native LaunchAgent. The job was started on demand (`launchctl kickstart`) and by its load-time run.
+
+That result did not hold on every run. Of four hosted `macos-15` runs of the same code on 2026-11-21 (commits `4009ca8`, `f4e5186` and two attempts on merge commit `e4c9f58`), three passed all nine checks and one failed: in the persistent-manual-pause check, no scheduled check was recorded for 240 s after `resume`, despite on-demand starts every 30 s. Seven checks had passed before it. The cause is not established; the log did not show whether a refresh was running or the LaunchAgent had not started. `schedule_acceptance.py` now prints the run record, lock state and LaunchAgent state on failure. Windows passed on all of its runs.
 
 Not verified on macOS: the LaunchAgent's own five-minute interval without an on-demand start, a personal Mac with an ordinary sign-in, restart and sign-out, and retrieval of the refreshed date through Claude Code or Codex on a Mac (no Mac workstation or Mac client was available). Until those pass, treat automatic indexing on a Mac as a candidate and keep the manual `index` workflow available.
 
