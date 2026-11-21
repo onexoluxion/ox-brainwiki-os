@@ -88,15 +88,48 @@ class Bench:
         since = time.time()
         deadline = since + (420 if natural else timeout)
         nudged = 0
+        self.starts = []  # whether each on-demand start was accepted, for the failure report
         while time.time() < deadline:
             if not natural and time.time() - nudged > 30:
-                self.schedule.start_now()
+                self.starts.append(self.schedule.start_now())
                 nudged = time.time()
             for entry in self.history():
                 if entry['at'] > since and entry['outcome'] == outcome and (reason is None or entry['reason'] == reason):
                     return entry
             time.sleep(1)
         raise AssertionError(f'no scheduled {outcome}/{reason} check; saw {self.history()[-3:]}')
+
+    def diagnostics(self):
+        """State that explains a failed wait: was a refresh running, was the job loaded, did it start?"""
+        report = {'on_demand_starts_accepted': getattr(self, 'starts', None)}
+        for name in ('run.json', 'hold.json', 'last.json'):
+            report[name] = self.schedule.read(name)[0]
+        try:
+            with self.app.state_guard():
+                report['writer_lock'] = 'free'
+        except TRANSIENT:
+            report['writer_lock'] = 'held'
+        except Exception as error:
+            report['writer_lock'] = type(error).__name__
+        try:
+            status = self.schedule.status()
+            report['status'] = {key: status[key] for key in ('automatic_indexing', 'job', 'index')}
+        except Exception as error:
+            report['status'] = type(error).__name__
+        if os.name == 'nt':
+            command = [self.schedule._schtasks(), '/Query', '/TN', self.schedule.task, '/V', '/FO', 'LIST']
+            wanted = ('Status:', 'Last Run Time:', 'Last Result:', 'Next Run Time:')
+        else:
+            command = ['/bin/launchctl', 'print', f'{self.schedule._domain()}/{self.schedule.label}']
+            wanted = ('state =', 'runs =', 'last exit code', 'pid =', 'run interval', 'last terminating signal')
+        try:
+            done = subprocess.run(command, capture_output=True, text=True, timeout=60)
+            report['os_job'] = {'exit': done.returncode,
+                                'lines': [line.strip() for line in done.stdout.splitlines()
+                                          if any(word in line for word in wanted)][:12]}
+        except Exception as error:
+            report['os_job'] = type(error).__name__
+        return report
 
     def writer_free(self, timeout=330):
         deadline = time.time() + timeout
@@ -318,6 +351,7 @@ def main():
     except BaseException:
         report['failed_after'] = list(report['checks'])
         report['last_checks'] = bench.history()[-5:]
+        report['diagnostics'] = bench.diagnostics()
         print(json.dumps(report, indent=2))
         args.seller_only = False
         raise

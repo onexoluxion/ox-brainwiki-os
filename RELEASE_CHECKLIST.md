@@ -6,7 +6,7 @@
 
 - [x] Windows: regression suite and nine scheduler acceptance checks through a real Scheduled Task (upgrade, repeated setup, seller example, overlap, LF/CRLF, exclusion change, pause, uninstall native; restart recovery simulated).
 - [x] Windows clients: Codex CLI and Claude Code retrieved the refreshed delivery date and its source file; the unreviewed draft stayed outside search.
-- [x] Apple silicon macOS scheduler: regression suite and the same nine checks through a real LaunchAgent on a hosted `macos-15` arm64 runner (restart recovery simulated; job started on demand).
+- [ ] Apple silicon macOS scheduler: the same nine checks through a real LaunchAgent passed on three of four hosted `macos-15` arm64 runs (restart recovery simulated; job started on demand); one run failed after `resume` with the cause not established. Explain that failure before calling the Mac scheduler verified.
 - [ ] Apple silicon macOS on a personal Mac: the five-minute interval without an on-demand start, and Claude Code and Codex retrieval, are not verified; manual indexing remains the documented fallback.
 - [ ] Real restart, sign-out and Windows Fast Startup shutdown on a workstation: not exercised; restart recovery is simulated.
 - [ ] Large-vault refresh duration and an unattended multi-day run: not measured.
